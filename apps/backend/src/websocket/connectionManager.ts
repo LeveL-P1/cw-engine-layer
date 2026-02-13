@@ -12,10 +12,11 @@ const sessions = new Map<string, Set<Client>>()
 export function setupWebSocket(wss: WebSocketServer) {
   wss.on("connection", (ws: WebSocket) => {
 
-    ws.on("message", (raw) => {
+    ws.on("message", async (raw) => {
       const data = JSON.parse(raw.toString())
-      handleMessage(ws, data)
+      await handleMessage(ws, data)
     })
+
 
     ws.on("close", () => {
       for (const [sessionId, clients] of sessions.entries()) {
