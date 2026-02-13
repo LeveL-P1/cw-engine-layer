@@ -1,18 +1,21 @@
-type Event = {
-  type: string
+export type SystemEvent = {
+  type: "CANVAS_EVENT"
   sessionId: string
   userId: string
   payload: any
+  timestamp: number
 }
 
-const subscribers: ((event: Event) => void)[] = []
+type Subscriber = (event: SystemEvent) => void
 
-export function publishEvent(event: Event) {
+const subscribers: Subscriber[] = []
+
+export function publishEvent(event: SystemEvent) {
   for (const sub of subscribers) {
     sub(event)
   }
 }
 
-export function subscribe(handler: (event: Event) => void) {
+export function subscribe(handler: Subscriber) {
   subscribers.push(handler)
 }
