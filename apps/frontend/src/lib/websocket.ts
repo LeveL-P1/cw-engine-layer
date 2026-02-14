@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 let socket: WebSocket | null = null
 
 export function connectWebSocket(sessionId: string, userId: string) {
@@ -13,17 +12,9 @@ export function connectWebSocket(sessionId: string, userId: string) {
       })
     )
   }
-
-  socket.onmessage = (event) => {
-    const data = JSON.parse(event.data)
-    console.log("Received:", data)
-  }
-
-  socket.onclose = () => {
-    console.log("Disconnected from server")
-  }
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function sendEvent(event: any) {
   if (!socket || socket.readyState !== WebSocket.OPEN) return
   socket.send(JSON.stringify(event))
