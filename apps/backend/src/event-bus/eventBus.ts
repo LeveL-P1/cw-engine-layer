@@ -10,12 +10,10 @@ type Subscriber = (event: SystemEvent) => void
 
 const subscribers: Subscriber[] = []
 
-export function publishEvent(event: SystemEvent) {
-  for (const sub of subscribers) {
-    sub(event)
-  }
-}
-
 export function subscribe(handler: Subscriber) {
   subscribers.push(handler)
+}
+
+export function publishEvent(event: SystemEvent) {
+  subscribers.forEach((handler) => handler(event))
 }
