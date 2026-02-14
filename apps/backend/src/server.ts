@@ -13,9 +13,9 @@ const wss = new WebSocketServer({ server })
 
 setupWebSocket(wss)
 
-subscribe(async (event) => {
-  await persistEvent(event)
-})
+// subscribe(async (event) => {
+//   await persistEvent(event)
+// })
 
 app.get("/health", (_, res) => {
   res.json({ status: "ok" })
