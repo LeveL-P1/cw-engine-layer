@@ -4,6 +4,7 @@ import { WebSocketServer } from "ws"
 import { setupWebSocket } from "./websocket/connectionManager"
 import { initTelemetry } from "./telemetry/telemetryEngine"
 import { createSnapshot } from "./telemetry/metricsSnapshotService"
+import analyticsRoutes from "./routes/analyticsRoutes"
 
 
 const app = express()
@@ -13,6 +14,8 @@ const wss = new WebSocketServer({ server })
 
 setupWebSocket(wss)
 initTelemetry()
+
+app.use("/api", analyticsRoutes)
 
 setInterval(async () => {
   await createSnapshot("session-1")
