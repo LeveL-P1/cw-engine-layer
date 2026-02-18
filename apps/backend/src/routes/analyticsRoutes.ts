@@ -7,6 +7,7 @@ const router = Router()
 router.get("/metrics/:sessionId", async (req, res) => {
   const { sessionId } = req.params
 
+  // Try DB snapshot first
   const latestSnapshot = await prisma.metricsSnapshot.findFirst({
     where: { sessionId },
     orderBy: { timestamp: "desc" }
@@ -27,8 +28,12 @@ router.get("/metrics/:sessionId", async (req, res) => {
   }
 
   const total = liveMetrics.totalEdits
-  const userCounts = Array.from(liveMetrics.userEdits.values())
-  const max = userCounts.length ? Math.max(...userCounts) : 0
+  const userEntries = Array.from(liveMetrics.userEdits.entries())
+
+  const max = userEntries.length
+    ? Math.max(...userEntries.map(([_, count]) => count))
+    : 0
+
   const dominanceRatio = total > 0 ? max / total : 0
 
   return res.json({
@@ -36,7 +41,11 @@ router.get("/metrics/:sessionId", async (req, res) => {
     data: {
       totalEdits: total,
       activeUsers: liveMetrics.userEdits.size,
-      dominanceRatio
+      dominanceRatio,
+      perUser: userEntries.map(([userId, count]) => ({
+        userId,
+        edits: count
+      }))
     }
   })
 })
