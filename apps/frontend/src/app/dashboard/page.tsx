@@ -25,8 +25,18 @@ type Metrics = {
 
 export default function Dashboard() {
   const [metrics, setMetrics] = useState<Metrics | null>(null)
+  const [mode, setMode] = useState<string>("FREE")
 
   useEffect(() => {
+    const loadMode = async () => {
+      const res = await fetch("http://localhost:4000/api/mode/session-1")
+      if (!res.ok) return
+      const data = await res.json()
+      setMode(data.mode)
+    }
+
+    loadMode()
+
     let mounted = true
 
     const loadMetrics = async () => {
@@ -53,8 +63,33 @@ export default function Dashboard() {
   }
 
   return (
+
     <div className="p-8 space-y-8">
       <h1 className="text-2xl font-bold">Session Dashboard</h1>
+      
+      <div className="flex items-center gap-4">
+        <span className="font-semibold">
+          Current Mode: {mode}
+        </span>
+
+        <button
+          onClick={async () => {
+            const newMode = mode === "FREE" ? "LOCKED" : "FREE"
+
+            await fetch("http://localhost:4000/api/mode/session-1", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ mode: newMode })
+            })
+
+            setMode(newMode)
+          }}
+          className="px-4 py-2 bg-blue-500 text-white rounded-lg"
+        >
+          Toggle Mode
+        </button>
+      </div>
+
 
       <div className="grid grid-cols-3 gap-6">
         <Card title="Total Edits" value={metrics.totalEdits} />

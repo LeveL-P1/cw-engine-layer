@@ -27,6 +27,11 @@ export function getRole(sessionId: string, userId: string): Role {
   return sessions.get(sessionId)!.roles.get(userId) || "CONTRIBUTOR"
 }
 
+export function getMode(sessionId: string): Mode {
+  ensureSession(sessionId)
+  return sessions.get(sessionId)!.mode
+}
+
 export function setMode(sessionId: string, mode: Mode) {
   ensureSession(sessionId)
   sessions.get(sessionId)!.mode = mode

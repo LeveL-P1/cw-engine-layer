@@ -1,6 +1,7 @@
 import { Router } from "express"
 import { prisma } from "../lib/prisma"
 import { getSessionMetrics } from "../telemetry/telemetryEngine"
+import { setMode, getMode } from "../governance/governanceEngine"
 
 const router = Router()
 
@@ -14,11 +15,26 @@ router.get("/metrics/:sessionId", async (req, res) => {
   })
 
   if (latestSnapshot) {
+    const liveMetrics = getSessionMetrics(sessionId)
+
+    const perUser = liveMetrics
+      ? Array.from(liveMetrics.userEdits.entries()).map(
+        ([userId, count]) => ({
+          userId,
+          edits: count
+        })
+      )
+      : []
+
     return res.json({
       source: "snapshot",
-      data: latestSnapshot
+      data: {
+        ...latestSnapshot,
+        perUser
+      }
     })
   }
+
 
   // Fallback to live in-memory metrics
   const liveMetrics = getSessionMetrics(sessionId)
@@ -48,6 +64,24 @@ router.get("/metrics/:sessionId", async (req, res) => {
       }))
     }
   })
+})
+
+router.get("/mode/:sessionId", (req, res) => {
+  const { sessionId } = req.params
+  const mode = getMode(sessionId)
+  res.json({ mode })
+})
+
+router.post("/mode/:sessionId", (req, res) => {
+  const { sessionId } = req.params
+  const { mode } = req.body
+
+  if (!["FREE", "LOCKED"].includes(mode)) {
+    return res.status(400).json({ message: "Invalid mode" })
+  }
+
+  setMode(sessionId, mode)
+  res.json({ message: "Mode updated", mode })
 })
 
 export default router
