@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client"
 
 import { useEffect, useState } from "react"
@@ -10,6 +9,7 @@ import {
   Tooltip,
   ResponsiveContainer
 } from "recharts"
+import { setModeListener } from "@/lib/websocket"
 
 type PerUser = {
   userId: string
@@ -24,21 +24,14 @@ type Metrics = {
 }
 
 export default function Dashboard() {
+
   const [metrics, setMetrics] = useState<Metrics | null>(null)
   const [mode, setMode] = useState<string>("FREE")
 
   useEffect(() => {
-    const loadMode = async () => {
-      const res = await fetch("http://localhost:4000/api/mode/session-1")
-      if (!res.ok) return
-      const data = await res.json()
-      setMode(data.mode)
-    }
-
-    loadMode()
-
     let mounted = true
 
+    // 🔹 Load metrics (polling)
     const loadMetrics = async () => {
       const res = await fetch("http://localhost:4000/api/metrics/session-1")
       if (!res.ok) return
@@ -49,8 +42,26 @@ export default function Dashboard() {
       }
     }
 
+    // 🔹 Load initial mode once
+    const loadMode = async () => {
+      const res = await fetch("http://localhost:4000/api/mode/session-1")
+      if (!res.ok) return
+
+      const data = await res.json()
+      if (mounted) {
+        setMode(data.mode)
+      }
+    }
+
     loadMetrics()
+    loadMode()
+
     const interval = setInterval(loadMetrics, 5000)
+
+    // 🔹 Real-time mode listener
+    setModeListener((newMode) => {
+      setMode(newMode)
+    })
 
     return () => {
       mounted = false
@@ -63,33 +74,32 @@ export default function Dashboard() {
   }
 
   return (
+    <div className="p-8 space-y-8 bg-gray-50 dark:bg-gray-900 min-h-screen text-gray-900 dark:text-gray-100 transition-colors">
 
-    <div className="p-8 space-y-8">
-      <h1 className="text-2xl font-bold">Session Dashboard</h1>
-      
-      <div className="flex items-center gap-4">
-        <span className="font-semibold">
-          Current Mode: {mode}
-        </span>
+      <div className="flex justify-between items-center">
+        <h1 className="text-2xl font-bold">Session Dashboard</h1>
 
-        <button
-          onClick={async () => {
-            const newMode = mode === "FREE" ? "LOCKED" : "FREE"
+        <div className="flex items-center gap-4">
+          <span className="font-semibold">
+            Mode: {mode}
+          </span>
 
-            await fetch("http://localhost:4000/api/mode/session-1", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ mode: newMode })
-            })
+          <button
+            onClick={async () => {
+              const newMode = mode === "FREE" ? "LOCKED" : "FREE"
 
-            setMode(newMode)
-          }}
-          className="px-4 py-2 bg-blue-500 text-white rounded-lg"
-        >
-          Toggle Mode
-        </button>
+              await fetch("http://localhost:4000/api/mode/session-1", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ mode: newMode })
+              })
+            }}
+            className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition"
+          >
+            Toggle Mode
+          </button>
+        </div>
       </div>
-
 
       <div className="grid grid-cols-3 gap-6">
         <Card title="Total Edits" value={metrics.totalEdits} />
@@ -100,8 +110,7 @@ export default function Dashboard() {
         />
       </div>
 
-      <div className="w-full h-80 bg-gray-100 dark:bg-gray-800 p-4 rounded-lg">
-
+      <div className="w-full h-80 bg-white dark:bg-gray-800 p-4 rounded-lg shadow-md">
         <h2 className="text-lg font-semibold mb-4">
           Participation Breakdown
         </h2>
@@ -111,7 +120,7 @@ export default function Dashboard() {
             <XAxis dataKey="userId" />
             <YAxis />
             <Tooltip />
-            <Bar dataKey="edits" />
+            <Bar dataKey="edits" fill="#3b82f6" />
           </BarChart>
         </ResponsiveContainer>
       </div>
@@ -119,6 +128,7 @@ export default function Dashboard() {
   )
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function Card({ title, value }: { title: string; value: any }) {
   return (
     <div className="p-6 bg-white dark:bg-gray-800 shadow-md rounded-lg">

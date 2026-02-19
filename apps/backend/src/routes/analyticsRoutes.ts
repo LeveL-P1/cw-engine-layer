@@ -2,6 +2,7 @@ import { Router } from "express"
 import { prisma } from "../lib/prisma"
 import { getSessionMetrics } from "../telemetry/telemetryEngine"
 import { setMode, getMode } from "../governance/governanceEngine"
+import { broadcast } from "../websocket/connectionManager"
 
 const router = Router()
 
@@ -72,6 +73,7 @@ router.get("/mode/:sessionId", (req, res) => {
   res.json({ mode })
 })
 
+
 router.post("/mode/:sessionId", (req, res) => {
   const { sessionId } = req.params
   const { mode } = req.body
@@ -81,7 +83,15 @@ router.post("/mode/:sessionId", (req, res) => {
   }
 
   setMode(sessionId, mode)
+
+  broadcast(sessionId, {
+    type: "MODE_CHANGED",
+    sessionId,
+    mode
+  })
+
   res.json({ message: "Mode updated", mode })
 })
+
 
 export default router
