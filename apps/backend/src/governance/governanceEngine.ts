@@ -1,5 +1,5 @@
 export type Role = "FACILITATOR" | "CONTRIBUTOR" | "OBSERVER"
-export type Mode = "FREE" | "LOCKED"
+export type Mode = "FREE" | "LOCKED" | "DECISION"
 
 type SessionState = {
   mode: Mode
@@ -8,7 +8,7 @@ type SessionState = {
 
 const sessions = new Map<string, SessionState>()
 
-export function ensureSession(sessionId: string) {
+function ensureSession(sessionId: string) {
   if (!sessions.has(sessionId)) {
     sessions.set(sessionId, {
       mode: "FREE",
@@ -17,19 +17,21 @@ export function ensureSession(sessionId: string) {
   }
 }
 
-export function assignRole(sessionId: string, userId: string, role: Role) {
+export function assignRole(
+  sessionId: string,
+  userId: string,
+  role: Role
+) {
   ensureSession(sessionId)
   sessions.get(sessionId)!.roles.set(userId, role)
 }
 
-export function getRole(sessionId: string, userId: string): Role {
+export function getRole(
+  sessionId: string,
+  userId: string
+): Role {
   ensureSession(sessionId)
   return sessions.get(sessionId)!.roles.get(userId) || "CONTRIBUTOR"
-}
-
-export function getMode(sessionId: string): Mode {
-  ensureSession(sessionId)
-  return sessions.get(sessionId)!.mode
 }
 
 export function setMode(sessionId: string, mode: Mode) {
@@ -37,17 +39,30 @@ export function setMode(sessionId: string, mode: Mode) {
   sessions.get(sessionId)!.mode = mode
 }
 
-export function validateAction(sessionId: string, userId: string): boolean {
+export function getMode(sessionId: string): Mode {
+  ensureSession(sessionId)
+  return sessions.get(sessionId)!.mode
+}
+
+export function validateAction(
+  sessionId: string,
+  userId: string
+): boolean {
   ensureSession(sessionId)
 
   const session = sessions.get(sessionId)!
   const role = getRole(sessionId, userId)
 
+  // Observer never edits
+  if (role === "OBSERVER") return false
+
+  // Locked mode → only facilitator edits
   if (session.mode === "LOCKED" && role !== "FACILITATOR") {
     return false
   }
 
-  if (role === "OBSERVER") {
+  // Decision mode → no drawing allowed
+  if (session.mode === "DECISION") {
     return false
   }
 

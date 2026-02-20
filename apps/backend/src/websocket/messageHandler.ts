@@ -10,9 +10,11 @@ export async function handleMessage(ws: WebSocket, data: any) {
 
     case "JOIN_SESSION":
       joinSession(data.userId, data.sessionId, ws)
-      assignRole(data.sessionId, data.userId, "CONTRIBUTOR")
-      break
 
+      // First user becomes facilitator
+      assignRole(data.sessionId, data.userId, "FACILITATOR")
+
+      break
 
     case "CANVAS_EVENT":
 

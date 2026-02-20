@@ -21,6 +21,8 @@ app.use(cors({
   origin: "http://localhost:3000"
 }))
 
+app.use(express.json())
+
 app.use("/api", analyticsRoutes)
 
 setInterval(async () => {
@@ -30,7 +32,6 @@ setInterval(async () => {
 app.get("/health", (_, res) => {
   res.json({ status: "ok" })
 })
-app.use(express.json())
 
 server.listen(4000, () => {
   console.log("Server running on port 4000")
