@@ -1,3 +1,4 @@
+import { getMode } from "../governance/governanceEngine"
 import { prisma } from "../lib/prisma"
 import { getSessionMetrics } from "./telemetryEngine"
 
@@ -17,7 +18,8 @@ export async function createSnapshot(sessionId: string) {
       totalEdits: total,
       activeUsers: metrics.userEdits.size,
       dominanceRatio,
-      mode: "FREE"
+      mode: getMode(sessionId),
+      timestamp: new Date()
     }
   })
 }

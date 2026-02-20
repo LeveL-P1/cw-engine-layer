@@ -3,6 +3,7 @@ import { prisma } from "../lib/prisma"
 import { getSessionMetrics } from "../telemetry/telemetryEngine"
 import { setMode, getMode } from "../governance/governanceEngine"
 import { broadcast } from "../websocket/connectionManager"
+import { getRole } from "../governance/governanceEngine"
 
 const router = Router()
 
@@ -76,10 +77,16 @@ router.get("/mode/:sessionId", (req, res) => {
 
 router.post("/mode/:sessionId", (req, res) => {
   const { sessionId } = req.params
-  const { mode } = req.body
+  const { mode, userId } = req.body
 
-  if (!["FREE", "LOCKED"].includes(mode)) {
+  if (!["FREE", "LOCKED", "DECISION"].includes(mode)) {
     return res.status(400).json({ message: "Invalid mode" })
+  }
+
+  const role = getRole(sessionId, userId)
+
+  if (role !== "FACILITATOR") {
+    return res.status(403).json({ message: "Only facilitator can change mode" })
   }
 
   setMode(sessionId, mode)
@@ -92,6 +99,5 @@ router.post("/mode/:sessionId", (req, res) => {
 
   res.json({ message: "Mode updated", mode })
 })
-
 
 export default router
