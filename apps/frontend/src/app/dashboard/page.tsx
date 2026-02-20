@@ -1,5 +1,6 @@
 "use client"
 
+import { connectWebSocket, setModeListener } from "@/lib/websocket"
 import { useEffect, useState } from "react"
 import {
   BarChart,
@@ -9,7 +10,6 @@ import {
   Tooltip,
   ResponsiveContainer
 } from "recharts"
-import { setModeListener } from "@/lib/websocket"
 
 type PerUser = {
   userId: string
@@ -30,6 +30,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     let mounted = true
+    connectWebSocket("session-1", "user-1")
 
     // 🔹 Load metrics (polling)
     const loadMetrics = async () => {
@@ -91,7 +92,10 @@ export default function Dashboard() {
               await fetch("http://localhost:4000/api/mode/session-1", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ mode: newMode })
+                body: JSON.stringify({
+                  mode: newMode,
+                  userId: "user-1"   // TEMPORARY hardcoded
+                })
               })
             }}
             className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition"
