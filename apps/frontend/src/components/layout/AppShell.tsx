@@ -3,13 +3,17 @@
 import { ReactNode } from "react"
 import { Sidebar } from "../layout/Sidebar"
 import { Topbar } from "../layout/Topbar"
+import { useSessionSocket } from "@/hooks/useSessionSocket"
 
 interface AppShellProps {
   children: ReactNode
 }
 
-export function AppShell({ children }: AppShellProps) {
+export function AppShell({ children }: AppShellProps)
+ {
+  useSessionSocket()
   return (
+    
     <div className="h-screen w-full flex bg-zinc-950 text-zinc-100">
       
       {/* Sidebar */}
@@ -24,6 +28,7 @@ export function AppShell({ children }: AppShellProps) {
         {/* Content */}
         <main className="flex-1 overflow-auto p-6 bg-zinc-900">
           {children}
+          
         </main>
       </div>
     </div>
