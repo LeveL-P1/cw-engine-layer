@@ -1,49 +1,55 @@
 "use client"
 
+import Link from "next/link"
+import { usePathname } from "next/navigation"
+import clsx from "clsx"
 import { Badge } from "@/components/ui/Badge"
+import { useSession } from "@/context/session-context"
 
 export function Sidebar() {
+  const pathname = usePathname()
+  const { sessionName, role, mode } = useSession()
+
+  const navItems = [
+    { label: "Whiteboard", href: "/whiteboard" },
+    { label: "Analytics", href: "/dashboard" },
+    { label: "Session Summary", href: "/summary" },
+  ]
+
   return (
     <aside className="w-64 bg-zinc-900 border-r border-zinc-800 p-6 flex flex-col justify-between">
-      
       <div>
         <h2 className="text-lg font-semibold mb-6">
           Governed Whiteboard
         </h2>
+        <p className="font-medium">{sessionName}</p>
 
-        {/* Session Info */}
-        <div className="space-y-4">
-          <div>
-            <p className="text-xs text-zinc-400">Session</p>
-            <p className="font-medium">Design Sprint</p>
-          </div>
+        <Badge role={role}>{role}</Badge>
 
-          <div>
-            <p className="text-xs text-zinc-400">Your Role</p>
-            <Badge className="mt-1 bg-blue-600">FACILITATOR</Badge>
-          </div>
+        <Badge mode={mode}>{mode}</Badge>
 
-          <div>
-            <p className="text-xs text-zinc-400">Current Mode</p>
-            <Badge className="mt-1 bg-emerald-600">FREE</Badge>
-          </div>
-        </div>
+        <nav className="mt-10 space-y-2">
+          {navItems.map((item) => {
+            const isActive = pathname === item.href
 
-        {/* Navigation */}
-        <nav className="mt-10 space-y-3">
-          <a href="/whiteboard" className="block text-sm hover:text-white text-zinc-400">
-            Whiteboard
-          </a>
-          <a href="/dashboard" className="block text-sm hover:text-white text-zinc-400">
-            Analytics
-          </a>
-          <a href="/summary" className="block text-sm hover:text-white text-zinc-400">
-            Session Summary
-          </a>
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={clsx(
+                  "block px-3 py-2 rounded-md text-sm transition-colors",
+                  isActive
+                    ? "bg-zinc-800 text-white"
+                    : "text-zinc-400 hover:bg-zinc-800 hover:text-white"
+                )}
+              >
+                {item.label}
+              </Link>
+            )
+          })}
         </nav>
       </div>
 
-      {/* Footer */}
       <div className="text-xs text-zinc-500">
         Structured Collaboration System
       </div>
