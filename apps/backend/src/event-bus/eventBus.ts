@@ -6,7 +6,7 @@ export type SystemEvent = {
   timestamp: number
 }
 
-type Subscriber = (event: SystemEvent) => void
+type Subscriber = (event: SystemEvent) => void | Promise<void>
 
 const subscribers: Subscriber[] = []
 
@@ -14,6 +14,12 @@ export function subscribe(handler: Subscriber) {
   subscribers.push(handler)
 }
 
-export function publishEvent(event: SystemEvent) {
-  subscribers.forEach((handler) => handler(event))
+export async function publishEvent(event: SystemEvent) {
+  for (const handler of subscribers) {
+    try {
+      await handler(event)
+    } catch (err) {
+      console.error("Event handler error:", err)
+    }
+  }
 }

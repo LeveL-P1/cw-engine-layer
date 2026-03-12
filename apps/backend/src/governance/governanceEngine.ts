@@ -1,3 +1,5 @@
+import { prisma } from "../lib/prisma"
+
 export type Role = "FACILITATOR" | "CONTRIBUTOR" | "OBSERVER"
 export type Mode = "FREE" | "LOCKED" | "DECISION"
 
@@ -34,9 +36,21 @@ export function getRole(
   return sessions.get(sessionId)!.roles.get(userId) || "CONTRIBUTOR"
 }
 
-export function setMode(sessionId: string, mode: Mode) {
+export function hasFacilitator(sessionId: string): boolean {
+  ensureSession(sessionId)
+  const roles = sessions.get(sessionId)!.roles
+  return Array.from(roles.values()).includes("FACILITATOR")
+}
+
+export async function setMode(sessionId: string, mode: Mode) {
   ensureSession(sessionId)
   sessions.get(sessionId)!.mode = mode
+
+  // Sync to DB
+  await prisma.session.update({
+    where: { id: sessionId },
+    data: { currentMode: mode }
+  }).catch(() => {}) // Session may not exist in DB yet
 }
 
 export function getMode(sessionId: string): Mode {

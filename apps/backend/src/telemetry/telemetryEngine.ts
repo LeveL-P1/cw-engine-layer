@@ -29,3 +29,7 @@ export function initTelemetry() {
 export function getSessionMetrics(sessionId: string) {
   return sessionMetrics.get(sessionId)
 }
+
+export function getAllSessionIds(): string[] {
+  return Array.from(sessionMetrics.keys())
+}

@@ -4,6 +4,9 @@ import { WebSocketServer } from "ws"
 import { setupWebSocket } from "./websocket/connectionManager"
 import { initTelemetry } from "./telemetry/telemetryEngine"
 import { createSnapshot } from "./telemetry/metricsSnapshotService"
+import { getAllSessionIds } from "./telemetry/telemetryEngine"
+import { subscribe } from "./event-bus/eventBus"
+import { persistEvent } from "./services/eventService"
 import analyticsRoutes from "./routes/analyticsRoutes"
 import cors from "cors"
 
@@ -15,6 +18,7 @@ const wss = new WebSocketServer({ server })
 
 setupWebSocket(wss)
 initTelemetry()
+subscribe(persistEvent)
 
 
 app.use(cors({
@@ -26,7 +30,10 @@ app.use(express.json())
 app.use("/api", analyticsRoutes)
 
 setInterval(async () => {
-  await createSnapshot("session-1")
+  const sessionIds = getAllSessionIds()
+  for (const id of sessionIds) {
+    await createSnapshot(id)
+  }
 }, 60000)
 
 app.get("/health", (_, res) => {
@@ -36,3 +43,4 @@ app.get("/health", (_, res) => {
 server.listen(4000, () => {
   console.log("Server running on port 4000")
 })
+

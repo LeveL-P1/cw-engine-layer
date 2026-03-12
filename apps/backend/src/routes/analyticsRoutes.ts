@@ -75,7 +75,7 @@ router.get("/mode/:sessionId", (req, res) => {
 })
 
 
-router.post("/mode/:sessionId", (req, res) => {
+router.post("/mode/:sessionId", async (req, res) => {
   const { sessionId } = req.params
   const { mode, userId } = req.body
 
@@ -89,7 +89,7 @@ router.post("/mode/:sessionId", (req, res) => {
     return res.status(403).json({ message: "Only facilitator can change mode" })
   }
 
-  setMode(sessionId, mode)
+  await setMode(sessionId, mode)
 
   broadcast(sessionId, {
     type: "MODE_CHANGED",

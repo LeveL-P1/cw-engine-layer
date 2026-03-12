@@ -13,8 +13,13 @@ export function setupWebSocket(wss: WebSocketServer) {
   wss.on("connection", (ws: WebSocket) => {
 
     ws.on("message", async (raw) => {
-      const data = JSON.parse(raw.toString())
-      await handleMessage(ws, data)
+      try {
+        const data = JSON.parse(raw.toString())
+        await handleMessage(ws, data)
+      } catch (err) {
+        console.error("Invalid WebSocket message:", err)
+        ws.send(JSON.stringify({ type: "ERROR", message: "Invalid message format" }))
+      }
     })
 
 
@@ -46,6 +51,8 @@ export function broadcast(sessionId: string, message: any) {
   if (!clients) return
 
   for (const client of clients) {
-    client.socket.send(JSON.stringify(message))
+    if (client.socket.readyState === WebSocket.OPEN) {
+      client.socket.send(JSON.stringify(message))
+    }
   }
 }
