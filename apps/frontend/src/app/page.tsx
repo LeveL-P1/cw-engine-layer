@@ -1,14 +1,7 @@
-// import Image from "next/image";
-import Whiteboard from "@/components/whiteboard/whiteboard"
-
+import { redirect } from "next/navigation"
 
 export default function Home() {
-  return (
-    <Whiteboard
-      sessionId="session-1"
-      userId="user-1"
-    />
-  )
+  redirect("/whiteboard")
 }
 
 
