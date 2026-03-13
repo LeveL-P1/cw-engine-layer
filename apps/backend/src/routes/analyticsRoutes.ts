@@ -68,6 +68,69 @@ router.get("/metrics/:sessionId", async (req, res) => {
   })
 })
 
+router.get("/metrics/:sessionId/timeline", async (req, res) => {
+  const { sessionId } = req.params
+
+  const events = await prisma.eventLog.findMany({
+    where: { sessionId },
+    orderBy: { timestamp: "asc" }
+  })
+
+  if (!events.length) {
+    return res.json({ data: [] })
+  }
+
+  const bucketSizeMs = 60_000
+  const buckets = new Map<number, number>()
+
+  for (const event of events) {
+    const timeMs = event.timestamp.getTime()
+    const bucketStart = Math.floor(timeMs / bucketSizeMs) * bucketSizeMs
+    const current = buckets.get(bucketStart) ?? 0
+    buckets.set(bucketStart, current + 1)
+  }
+
+  const timeline = Array.from(buckets.entries())
+    .sort(([a], [b]) => a - b)
+    .map(([bucketStart, edits]) => ({
+      timestamp: new Date(bucketStart).toISOString(),
+      edits
+    }))
+
+  return res.json({ data: timeline })
+})
+
+router.get("/metrics/:sessionId/mode-transitions", async (req, res) => {
+  const { sessionId } = req.params
+
+  const snapshots = await prisma.metricsSnapshot.findMany({
+    where: { sessionId },
+    orderBy: { timestamp: "asc" }
+  })
+
+  if (!snapshots.length) {
+    return res.json({ data: [] })
+  }
+
+  const transitions: { timestamp: string; mode: string }[] = []
+  let lastMode: string | null = null
+
+  for (const snap of snapshots) {
+    if (snap.mode === lastMode) {
+      continue
+    }
+
+    transitions.push({
+      timestamp: snap.timestamp.toISOString(),
+      mode: snap.mode
+    })
+
+    lastMode = snap.mode
+  }
+
+  return res.json({ data: transitions })
+})
+
 router.get("/mode/:sessionId", (req, res) => {
   const { sessionId } = req.params
   const mode = getMode(sessionId)
