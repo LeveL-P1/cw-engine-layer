@@ -8,6 +8,7 @@ import { getAllSessionIds } from "./telemetry/telemetryEngine"
 import { subscribe } from "./event-bus/eventBus"
 import { persistEvent } from "./services/eventService"
 import analyticsRoutes from "./routes/analyticsRoutes"
+import sessionRoutes from "./routes/sessionRoutes"
 import cors from "cors"
 
 
@@ -28,6 +29,7 @@ app.use(cors({
 app.use(express.json())
 
 app.use("/api", analyticsRoutes)
+app.use("/api/sessions", sessionRoutes)
 
 setInterval(async () => {
   const sessionIds = getAllSessionIds()
