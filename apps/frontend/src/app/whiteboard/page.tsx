@@ -57,11 +57,21 @@ export default function WhiteboardPage() {
         throw new Error("Failed to join session")
       }
 
-      setSessionState({
+      const nextState = {
         sessionId: created.id,
         userId,
         role,
-      })
+        name: displayName.trim(),
+      }
+
+      if (typeof window !== "undefined") {
+        window.sessionStorage.setItem(
+          "currentSession",
+          JSON.stringify(nextState),
+        )
+      }
+
+      setSessionState(nextState)
     } catch (e) {
       setError("Unable to start a new session right now.")
     } finally {

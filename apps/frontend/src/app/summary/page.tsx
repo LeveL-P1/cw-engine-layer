@@ -1,24 +1,96 @@
 "use client"
 
 import { AppShell } from "@/components/layout/AppShell"
-import { useSession } from "@/context/session-context"
+import { SessionProvider, type RoleType } from "@/context/session-context"
+import { useEffect, useState } from "react"
+
+type PerUser = {
+  userId: string
+  edits: number
+}
+
+type Metrics = {
+  totalEdits: number
+  activeUsers: number
+  dominanceRatio: number
+  perUser: PerUser[]
+}
 
 export default function SessionSummaryPage() {
-    const {
-        sessionName,
-        dominanceRatio,
-        activeUsers,
-        sessionStartTime,
-    } = useSession()
+  const [sessionInfo, setSessionInfo] = useState<null | {
+    sessionId: string
+    userId: string
+    role: RoleType
+    name: string
+  }>(null)
+  const [metrics, setMetrics] = useState<Metrics | null>(null)
+  const [error, setError] = useState<string | null>(null)
 
-    const totalEdits = 142   // Replace with real API later
-    const modeBreakdown = {
-        FREE: "12m",
-        DECISION: "5m",
-        LOCKED: "3m",
+  useEffect(() => {
+    if (typeof window === "undefined") return
+
+    const stored = window.sessionStorage.getItem("currentSession")
+
+    if (!stored) {
+      setError("No active session found. Start a session from the whiteboard.")
+      return
     }
 
-    const mostActiveUser = "Bob"
+    try {
+      const parsed = JSON.parse(stored) as {
+        sessionId: string
+        userId: string
+        role: RoleType
+        name: string
+      }
+
+      setSessionInfo(parsed)
+    } catch {
+      setError("Stored session information is invalid.")
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!sessionInfo) return
+
+    let cancelled = false
+
+    const loadMetrics = async () => {
+      const res = await fetch(
+        `http://localhost:4000/api/metrics/${sessionInfo.sessionId}`,
+      )
+
+      if (!res.ok) return
+
+      const data = await res.json()
+      if (!cancelled) {
+        setMetrics(data.data)
+      }
+    }
+
+    loadMetrics()
+
+    return () => {
+      cancelled = true
+    }
+  }, [sessionInfo])
+
+  if (error) {
+    return <div className="p-6 text-red-500">{error}</div>
+  }
+
+  if (!sessionInfo || !metrics) {
+    return <div className="p-6">Loading summary...</div>
+  }
+
+  const sessionName = "Whiteboard Session"
+  const totalEdits = metrics.totalEdits
+  const dominanceRatio = metrics.dominanceRatio
+  const participants = metrics.activeUsers
+  const mostActiveUser =
+    metrics.perUser.length > 0
+      ? metrics.perUser.reduce((a, b) => (b.edits > a.edits ? b : a)).userId
+      : sessionInfo.userId
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     function exportReport(data: any) {
@@ -35,63 +107,62 @@ export default function SessionSummaryPage() {
     }
 
     return (
+      <SessionProvider
+        initialState={{
+          sessionId: sessionInfo.sessionId,
+          sessionName,
+          role: sessionInfo.role,
+          mode: "FREE",
+          dominanceRatio,
+          activeUsers: [
+            {
+              id: sessionInfo.userId,
+              name: sessionInfo.name,
+              role: sessionInfo.role,
+            },
+          ],
+          sessionStartTime: Date.now(),
+          modeStartedAt: Date.now(),
+        }}
+      >
         <AppShell>
-
-            <div className="space-y-8">
-
-                <div>
-                    <h1 className="text-2xl font-semibold mb-2">
-                        Session Summary
-                    </h1>
-                    <p className="text-sm text-zinc-400">
-                        Analytical overview of collaboration performance
-                    </p>
-                </div>
-                <button
-                    onClick={() =>
-                        exportReport({
-                            sessionName,
-                            totalEdits,
-                            participants: activeUsers.length,
-                            dominanceRatio,
-                            mostActiveUser,
-                            modeBreakdown,
-                        })
-                    }
-                    className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm"
-                >
-                    Export Report
-                </button>
-                {/* Metrics Grid */}
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
-
-                    <SummaryCard label="Session Name" value={sessionName} />
-                    <SummaryCard label="Total Edits" value={totalEdits} />
-                    <SummaryCard label="Participants" value={activeUsers.length} />
-                    <SummaryCard label="Dominance Ratio" value={dominanceRatio.toFixed(2)} />
-                    <SummaryCard label="Most Active User" value={mostActiveUser} />
-
-                </div>
-
-                {/* Mode Breakdown */}
-                <div className="bg-zinc-900 p-6 rounded-lg border border-zinc-800">
-                    <h3 className="text-lg font-semibold mb-4">
-                        Mode Distribution
-                    </h3>
-
-                    <ul className="space-y-2 text-sm text-zinc-300">
-                        {Object.entries(modeBreakdown).map(([mode, duration]) => (
-                            <li key={mode} className="flex justify-between">
-                                <span>{mode}</span>
-                                <span>{duration}</span>
-                            </li>
-                        ))}
-                    </ul>
-                </div>
-
-
+          <div className="(space-y-8">
+            <div>
+              <h1 className="text-2xl font-semibold mb-2">
+                Session Summary
+              </h1>
+              <p className="text-sm text-zinc-400">
+                Analytical overview of collaboration performance
+              </p>
             </div>
+            <button
+              onClick={() =>
+                exportReport({
+                  sessionName,
+                  totalEdits,
+                  participants,
+                  dominanceRatio,
+                  mostActiveUser,
+                })
+              }
+              className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm"
+            >
+              Export Report
+            </button>
+
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+              <SummaryCard label="Session Name" value={sessionName} />
+              <SummaryCard label="Total Edits" value={totalEdits} />
+              <SummaryCard label="Participants" value={participants} />
+              <SummaryCard
+                label="Dominance Ratio"
+                value={dominanceRatio.toFixed(2)}
+              />
+              <SummaryCard label="Most Active User" value={mostActiveUser} />
+            </div>
+          </div>
         </AppShell>
+      </SessionProvider>
     )
 }
 
