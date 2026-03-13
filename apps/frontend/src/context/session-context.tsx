@@ -8,7 +8,7 @@ import {
 } from "react"
 
 export type RoleType = "FACILITATOR" | "CONTRIBUTOR" | "OBSERVER"
-export type ModeType = "FREE" | "SILENT" | "DECISION" | "LOCKED"
+export type ModeType = "FREE" | "DECISION" | "LOCKED"
 
 interface SessionState {
   sessionId: string

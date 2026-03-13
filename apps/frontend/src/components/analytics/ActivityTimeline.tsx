@@ -10,7 +10,7 @@ import {
   ReferenceLine,
 } from "recharts"
 
-type ModeType = "FREE" | "SILENT" | "DECISION" | "LOCKED"
+type ModeType = "FREE" | "DECISION" | "LOCKED"
 
 interface TimelinePoint {
   time: string
@@ -32,8 +32,6 @@ function getModeColor(mode: ModeType) {
   switch (mode) {
     case "FREE":
       return "#10b981"
-    case "SILENT":
-      return "#8b5cf6"
     case "DECISION":
       return "#f59e0b"
     case "LOCKED":

@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { useSession, ModeType } from "@/context/session-context"
 
-const modes: ModeType[] = ["FREE", "SILENT", "DECISION", "LOCKED"]
+const modes: ModeType[] = ["FREE", "DECISION", "LOCKED"]
 
 export function ModeControlPanel() {
   const { role, mode, sessionId } = useSession()

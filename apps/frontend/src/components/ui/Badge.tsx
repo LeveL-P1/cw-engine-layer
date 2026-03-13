@@ -3,7 +3,7 @@
 import { ReactNode } from "react"
 import clsx from "clsx"
 
-type ModeType = "FREE" | "SILENT" | "DECISION" | "LOCKED"
+type ModeType = "FREE" | "DECISION" | "LOCKED"
 type RoleType = "FACILITATOR" | "CONTRIBUTOR" | "OBSERVER"
 
 interface BadgeProps {
@@ -34,7 +34,6 @@ export function Badge({
 
   const modeStyles: Record<ModeType, string> = {
     FREE: "bg-emerald-600 text-white",
-    SILENT: "bg-purple-600 text-white",
     DECISION: "bg-amber-500 text-black",
     LOCKED: "bg-red-600 text-white",
   }
