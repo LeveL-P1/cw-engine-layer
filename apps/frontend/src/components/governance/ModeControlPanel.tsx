@@ -6,7 +6,7 @@ import { useSession, ModeType } from "@/context/session-context"
 const modes: ModeType[] = ["FREE", "DECISION", "LOCKED"]
 
 export function ModeControlPanel() {
-  const { role, mode, sessionId } = useSession()
+  const { role, mode, sessionId, activeUsers } = useSession()
 
   const [loading, setLoading] = useState(false)
   const [pendingMode, setPendingMode] = useState<ModeType | null>(null)
@@ -17,13 +17,23 @@ export function ModeControlPanel() {
     m === "LOCKED" || m === "DECISION"
 
   const requestModeChange = async (newMode: ModeType) => {
+    const facilitator = activeUsers.find((user) => user.role === "FACILITATOR")
+
+    if (!facilitator) {
+      console.error("No facilitator found in activeUsers; cannot change mode")
+      return
+    }
+
     try {
       setLoading(true)
 
-      await fetch("http://localhost:3001/api/session/mode", {
+      await fetch(`http://localhost:4000/api/mode/${sessionId}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sessionId, mode: newMode }),
+        body: JSON.stringify({
+          mode: newMode,
+          userId: facilitator.id,
+        }),
       })
 
       // Wait for WebSocket MODE_CHANGED
