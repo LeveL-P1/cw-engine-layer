@@ -26,11 +26,37 @@ export default function WhiteboardPage() {
 
     try {
       const role: RoleType = "FACILITATOR"
-      const userId = crypto.randomUUID()
+
+      const authRes = await fetch("http://localhost:4000/api/auth/dev-login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: displayName.trim(),
+          role,
+        }),
+      })
+
+      if (!authRes.ok) {
+        throw new Error("Failed to authenticate")
+      }
+
+      const authData = await authRes.json() as {
+        token: string
+        user: { id: string; name: string; role: RoleType }
+      }
+
+      const userId = authData.user.id
+
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem("authToken", authData.token)
+      }
 
       const createRes = await fetch("http://localhost:4000/api/sessions", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${authData.token}`,
+        },
         body: JSON.stringify({ name: null }),
       })
 
@@ -44,12 +70,11 @@ export default function WhiteboardPage() {
         `http://localhost:4000/api/sessions/${created.id}/join`,
         {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            userId,
-            name: displayName.trim(),
-            role,
-          }),
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${authData.token}`,
+          },
+          body: JSON.stringify({}),
         }
       )
 

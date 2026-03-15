@@ -26,12 +26,10 @@ router.post("/", async (req, res) => {
 
 router.post("/:sessionId/join", async (req, res) => {
   const { sessionId } = req.params
-  const { userId, name, role } = req.body ?? {}
+  const { user } = req
 
-  if (!userId || !name || !role) {
-    return res.status(400).json({
-      message: "userId, name and role are required",
-    })
+  if (!user) {
+    return res.status(401).json({ message: "Unauthorized" })
   }
 
   try {
@@ -43,23 +41,10 @@ router.post("/:sessionId/join", async (req, res) => {
       return res.status(404).json({ message: "Session not found" })
     }
 
-    await prisma.user.upsert({
-      where: { id: userId },
-      update: {
-        name,
-        role,
-      },
-      create: {
-        id: userId,
-        name,
-        role,
-      },
-    })
-
     const participant = await prisma.sessionParticipant.create({
       data: {
         sessionId,
-        userId,
+        userId: user.sub,
       },
     })
 

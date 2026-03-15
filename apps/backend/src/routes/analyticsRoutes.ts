@@ -140,13 +140,18 @@ router.get("/mode/:sessionId", (req, res) => {
 
 router.post("/mode/:sessionId", async (req, res) => {
   const { sessionId } = req.params
-  const { mode, userId } = req.body
+  const { mode } = req.body
+  const { user } = req
 
   if (!["FREE", "LOCKED", "DECISION"].includes(mode)) {
     return res.status(400).json({ message: "Invalid mode" })
   }
 
-  const role = getRole(sessionId, userId)
+  if (!user) {
+    return res.status(401).json({ message: "Unauthorized" })
+  }
+
+  const role = getRole(sessionId, user.sub)
 
   if (role !== "FACILITATOR") {
     return res.status(403).json({ message: "Only facilitator can change mode" })

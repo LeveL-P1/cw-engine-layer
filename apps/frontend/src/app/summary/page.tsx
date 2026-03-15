@@ -66,6 +66,11 @@ export default function SessionSummaryPage() {
     const loadMetrics = async () => {
       const res = await fetch(
         `http://localhost:4000/api/metrics/${sessionInfo.sessionId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${window.localStorage.getItem("authToken") ?? ""}`,
+          },
+        },
       )
 
       if (!res.ok) return
@@ -77,6 +82,11 @@ export default function SessionSummaryPage() {
 
       const transitionsRes = await fetch(
         `http://localhost:4000/api/metrics/${sessionInfo.sessionId}/mode-transitions`,
+        {
+          headers: {
+            Authorization: `Bearer ${window.localStorage.getItem("authToken") ?? ""}`,
+          },
+        },
       )
 
       if (!transitionsRes.ok) return

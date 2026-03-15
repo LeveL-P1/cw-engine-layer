@@ -54,6 +54,13 @@ export default function Dashboard() {
   useEffect(() => {
     if (typeof window === "undefined") return
 
+    const token = window.localStorage.getItem("authToken")
+
+    if (!token) {
+      setError("Not authenticated. Start a session from the whiteboard first.")
+      return
+    }
+
     const stored = window.sessionStorage.getItem("currentSession")
 
     if (!stored) {
@@ -86,6 +93,11 @@ export default function Dashboard() {
     const loadMetrics = async () => {
       const res = await fetch(
         `http://localhost:4000/api/metrics/${sessionInfo.sessionId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${window.localStorage.getItem("authToken") ?? ""}`,
+          },
+        },
       )
       if (!res.ok) return
 
@@ -99,6 +111,11 @@ export default function Dashboard() {
     const loadMode = async () => {
       const res = await fetch(
         `http://localhost:4000/api/mode/${sessionInfo.sessionId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${window.localStorage.getItem("authToken") ?? ""}`,
+          },
+        },
       )
       if (!res.ok) return
 
@@ -111,6 +128,11 @@ export default function Dashboard() {
     const loadTimeline = async () => {
       const res = await fetch(
         `http://localhost:4000/api/metrics/${sessionInfo.sessionId}/timeline`,
+        {
+          headers: {
+            Authorization: `Bearer ${window.localStorage.getItem("authToken") ?? ""}`,
+          },
+        },
       )
 
       if (!res.ok) return
@@ -125,6 +147,11 @@ export default function Dashboard() {
     const loadModeTransitions = async () => {
       const res = await fetch(
         `http://localhost:4000/api/metrics/${sessionInfo.sessionId}/mode-transitions`,
+        {
+          headers: {
+            Authorization: `Bearer ${window.localStorage.getItem("authToken") ?? ""}`,
+          },
+        },
       )
 
       if (!res.ok) return
@@ -210,11 +237,13 @@ export default function Dashboard() {
                   await fetch(
                     `http://localhost:4000/api/mode/${sessionInfo.sessionId}`,
                     {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                      mode: newMode,
-                        userId: sessionInfo.userId,
+                      method: "POST",
+                      headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${window.localStorage.getItem("authToken") ?? ""}`,
+                      },
+                      body: JSON.stringify({
+                        mode: newMode,
                       }),
                     },
                   )
