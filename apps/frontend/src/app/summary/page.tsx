@@ -64,11 +64,12 @@ export default function SessionSummaryPage() {
     let cancelled = false
 
     const loadMetrics = async () => {
+      const token = window.localStorage.getItem("authToken")
       const res = await fetch(
         `http://localhost:4000/api/metrics/${sessionInfo.sessionId}`,
         {
           headers: {
-            Authorization: `Bearer ${window.localStorage.getItem("authToken") ?? ""}`,
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
           },
         },
       )
@@ -84,7 +85,7 @@ export default function SessionSummaryPage() {
         `http://localhost:4000/api/metrics/${sessionInfo.sessionId}/mode-transitions`,
         {
           headers: {
-            Authorization: `Bearer ${window.localStorage.getItem("authToken") ?? ""}`,
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
           },
         },
       )

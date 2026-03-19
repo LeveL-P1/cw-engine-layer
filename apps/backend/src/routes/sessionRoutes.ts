@@ -28,9 +28,9 @@ router.post("/:sessionId/join", async (req, res) => {
   const { sessionId } = req.params
   const { user } = req
 
-  if (!user) {
-    return res.status(401).json({ message: "Unauthorized" })
-  }
+  const { userId, name, role } = req.body ?? {}
+
+  const effectiveUserId = user?.sub ?? userId
 
   try {
     const session = await prisma.session.findUnique({
@@ -41,10 +41,33 @@ router.post("/:sessionId/join", async (req, res) => {
       return res.status(404).json({ message: "Session not found" })
     }
 
+    if (!effectiveUserId) {
+      return res.status(400).json({ message: "userId is required" })
+    }
+
+    if (!user && (!name || !role)) {
+      return res.status(400).json({ message: "name and role are required" })
+    }
+
+    if (!user) {
+      await prisma.user.upsert({
+        where: { id: effectiveUserId },
+        update: {
+          name,
+          role,
+        },
+        create: {
+          id: effectiveUserId,
+          name,
+          role,
+        },
+      })
+    }
+
     const participant = await prisma.sessionParticipant.create({
       data: {
         sessionId,
-        userId: user.sub,
+        userId: effectiveUserId,
       },
     })
 

@@ -4,8 +4,9 @@
 import { Tldraw } from "tldraw"
 import "tldraw/tldraw.css"
 import { useEffect, useState } from "react"
-import { connectWebSocket, setModeListener } from "@/lib/websocket"
+import { setCanvasEventHandler } from "@/lib/websocket"
 import { handleCanvasChange } from "./CanvasAdapter"
+import { useSession, type ModeType } from "@/context/session-context"
 
 interface Props {
   sessionId: string
@@ -13,37 +14,58 @@ interface Props {
 }
 
 export default function Whiteboard({ sessionId, userId }: Props) {
-
-  const [mode, setMode] = useState<string>("FREE")
+  // Mode is owned by SessionProvider — no local duplicate state
+  const { mode, setMode } = useSession()
   const [editorInstance, setEditorInstance] = useState<any>(null)
 
+  // Sync the actual session mode from the backend once on mount.
+  // SessionProvider keeps it live via WS after this.
   useEffect(() => {
-    connectWebSocket(sessionId, userId)
-
-    // Load initial mode
     fetch(`http://localhost:4000/api/mode/${sessionId}`)
-      .then(res => res.json())
-      .then(data => setMode(data.mode))
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.mode) setMode(data.mode as ModeType)
+      })
+      .catch(() => {})
+  }, [sessionId]) // eslint-disable-line react-hooks/exhaustive-deps
 
-    setModeListener((newMode) => {
-      setMode(newMode)
-    })
-
-  }, [sessionId, userId])
-
-  // 🔹 Disable editing when LOCKED
+  // Apply remote canvas changes sent by other peers.
+  // Uses mergeRemoteChanges so Tldraw marks them as remote and
+  // the { source: 'user' } store listener below won't re-broadcast them.
   useEffect(() => {
     if (!editorInstance) return
 
-    editorInstance.updateInstanceState({
-      isReadonly: mode === "LOCKED"
+    setCanvasEventHandler((payload) => {
+      if (!payload?.changes) return
+      const { added, updated, removed } = payload.changes
+
+      editorInstance.store.mergeRemoteChanges(() => {
+        const toPut = [
+          ...Object.values(added ?? {}),
+          // updated is Record<id, [fromRecord, toRecord]> — we only need "to"
+          ...Object.values(updated ?? {}).map(([, to]: [any, any]) => to),
+        ]
+        const toRemove = Object.keys(removed ?? {})
+
+        if (toPut.length > 0) editorInstance.store.put(toPut)
+        if (toRemove.length > 0) editorInstance.store.remove(toRemove)
+      })
     })
 
+    return () => {
+      // Unregister on unmount so stale closures don't hold the editor ref
+      setCanvasEventHandler(null)
+    }
+  }, [editorInstance])
+
+  // Keep Tldraw read-only state in sync with governance mode
+  useEffect(() => {
+    if (!editorInstance) return
+    editorInstance.updateInstanceState({ isReadonly: mode === "LOCKED" })
   }, [mode, editorInstance])
 
   return (
     <div className="relative w-screen h-screen">
-
       {mode === "LOCKED" && (
         <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-red-500 text-white px-6 py-2 rounded-lg z-50">
           Session Locked
@@ -54,9 +76,14 @@ export default function Whiteboard({ sessionId, userId }: Props) {
         onMount={(editor) => {
           setEditorInstance(editor)
 
-          editor.store.listen((update) => {
-            handleCanvasChange(update, sessionId, userId)
-          })
+          // Only listen to user-initiated changes to avoid re-broadcasting
+          // changes that came in from remote peers via mergeRemoteChanges.
+          editor.store.listen(
+            (update) => {
+              handleCanvasChange(update, sessionId, userId)
+            },
+            { source: "user" },
+          )
         }}
       />
     </div>

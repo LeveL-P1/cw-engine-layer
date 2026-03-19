@@ -26,36 +26,42 @@ export default function WhiteboardPage() {
 
     try {
       const role: RoleType = "FACILITATOR"
+      const name = displayName.trim()
+
+      let token: string | null = null
+      let userId: string
 
       const authRes = await fetch("http://localhost:4000/api/auth/dev-login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: displayName.trim(),
-          role,
-        }),
+        body: JSON.stringify({ name, role }),
       })
 
-      if (!authRes.ok) {
-        throw new Error("Failed to authenticate")
-      }
+      if (authRes.ok) {
+        const authData = await authRes.json() as {
+          token: string
+          user: { id: string; name: string; role: RoleType }
+        }
 
-      const authData = await authRes.json() as {
-        token: string
-        user: { id: string; name: string; role: RoleType }
-      }
+        token = authData.token
+        userId = authData.user.id
 
-      const userId = authData.user.id
+        if (typeof window !== "undefined") {
+          window.localStorage.setItem("authToken", token)
+        }
+      } else {
+        userId = crypto.randomUUID()
 
-      if (typeof window !== "undefined") {
-        window.localStorage.setItem("authToken", authData.token)
+        if (typeof window !== "undefined") {
+          window.localStorage.removeItem("authToken")
+        }
       }
 
       const createRes = await fetch("http://localhost:4000/api/sessions", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${authData.token}`,
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: JSON.stringify({ name: null }),
       })
@@ -72,9 +78,17 @@ export default function WhiteboardPage() {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${authData.token}`,
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
           },
-          body: JSON.stringify({}),
+          body: JSON.stringify(
+            token
+              ? {}
+              : {
+                userId,
+                name,
+                role,
+              }
+          ),
         }
       )
 

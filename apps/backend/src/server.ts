@@ -31,8 +31,16 @@ app.use(cors({
 app.use(express.json())
 
 app.use("/api/auth", authRoutes)
-app.use("/api", authMiddleware, analyticsRoutes)
-app.use("/api/sessions", authMiddleware, sessionRoutes)
+
+const authEnabled = Boolean(process.env.JWT_SECRET)
+
+if (authEnabled) {
+  app.use("/api", authMiddleware, analyticsRoutes)
+  app.use("/api/sessions", authMiddleware, sessionRoutes)
+} else {
+  app.use("/api", analyticsRoutes)
+  app.use("/api/sessions", sessionRoutes)
+}
 
 setInterval(async () => {
   const sessionIds = getAllSessionIds()

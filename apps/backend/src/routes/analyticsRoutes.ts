@@ -4,6 +4,7 @@ import { getSessionMetrics } from "../telemetry/telemetryEngine"
 import { setMode, getMode } from "../governance/governanceEngine"
 import { broadcast } from "../websocket/connectionManager"
 import { getRole } from "../governance/governanceEngine"
+import type { Request } from "express"
 
 const router = Router()
 
@@ -140,18 +141,20 @@ router.get("/mode/:sessionId", (req, res) => {
 
 router.post("/mode/:sessionId", async (req, res) => {
   const { sessionId } = req.params
-  const { mode } = req.body
-  const { user } = req
+  const { mode, userId } = req.body
+  const user = (req as Request & { user?: { sub: string } }).user
 
   if (!["FREE", "LOCKED", "DECISION"].includes(mode)) {
     return res.status(400).json({ message: "Invalid mode" })
   }
 
-  if (!user) {
-    return res.status(401).json({ message: "Unauthorized" })
+  const effectiveUserId = user?.sub ?? userId
+
+  if (!effectiveUserId) {
+    return res.status(400).json({ message: "userId is required" })
   }
 
-  const role = getRole(sessionId, user.sub)
+  const role = getRole(sessionId, effectiveUserId)
 
   if (role !== "FACILITATOR") {
     return res.status(403).json({ message: "Only facilitator can change mode" })

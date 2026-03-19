@@ -54,13 +54,6 @@ export default function Dashboard() {
   useEffect(() => {
     if (typeof window === "undefined") return
 
-    const token = window.localStorage.getItem("authToken")
-
-    if (!token) {
-      setError("Not authenticated. Start a session from the whiteboard first.")
-      return
-    }
-
     const stored = window.sessionStorage.getItem("currentSession")
 
     if (!stored) {
@@ -91,12 +84,11 @@ export default function Dashboard() {
 
     // 🔹 Load metrics (polling)
     const loadMetrics = async () => {
+      const token = window.localStorage.getItem("authToken")
       const res = await fetch(
         `http://localhost:4000/api/metrics/${sessionInfo.sessionId}`,
         {
-          headers: {
-            Authorization: `Bearer ${window.localStorage.getItem("authToken") ?? ""}`,
-          },
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
         },
       )
       if (!res.ok) return
@@ -109,12 +101,11 @@ export default function Dashboard() {
 
     // 🔹 Load initial mode once
     const loadMode = async () => {
+      const token = window.localStorage.getItem("authToken")
       const res = await fetch(
         `http://localhost:4000/api/mode/${sessionInfo.sessionId}`,
         {
-          headers: {
-            Authorization: `Bearer ${window.localStorage.getItem("authToken") ?? ""}`,
-          },
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
         },
       )
       if (!res.ok) return
@@ -126,12 +117,11 @@ export default function Dashboard() {
     }
 
     const loadTimeline = async () => {
+      const token = window.localStorage.getItem("authToken")
       const res = await fetch(
         `http://localhost:4000/api/metrics/${sessionInfo.sessionId}/timeline`,
         {
-          headers: {
-            Authorization: `Bearer ${window.localStorage.getItem("authToken") ?? ""}`,
-          },
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
         },
       )
 
@@ -145,12 +135,11 @@ export default function Dashboard() {
     }
 
     const loadModeTransitions = async () => {
+      const token = window.localStorage.getItem("authToken")
       const res = await fetch(
         `http://localhost:4000/api/metrics/${sessionInfo.sessionId}/mode-transitions`,
         {
-          headers: {
-            Authorization: `Bearer ${window.localStorage.getItem("authToken") ?? ""}`,
-          },
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
         },
       )
 
@@ -240,10 +229,13 @@ export default function Dashboard() {
                       method: "POST",
                       headers: {
                         "Content-Type": "application/json",
-                        Authorization: `Bearer ${window.localStorage.getItem("authToken") ?? ""}`,
+                        ...(window.localStorage.getItem("authToken")
+                          ? { Authorization: `Bearer ${window.localStorage.getItem("authToken")}` }
+                          : {}),
                       },
                       body: JSON.stringify({
                         mode: newMode,
+                        userId: sessionInfo.userId,
                       }),
                     },
                   )
