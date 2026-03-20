@@ -1,3 +1,34 @@
 node_modules
 thu_mar_12_2026_comprehensive_analysis_of_collaborative_whiteboard_app.md
 .cursor/rules/conversation-flow.mdc
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build
+dist
+build
+.next
+.vercel
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
