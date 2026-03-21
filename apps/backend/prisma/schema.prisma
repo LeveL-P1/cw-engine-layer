@@ -14,11 +14,19 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(uuid())
-  name      String
-  role      String
-  createdAt DateTime @default(now())
-  sessions  SessionParticipant[]
+  id                        String   @id @default(uuid())
+  email                     String   @unique
+  name                      String
+  password_hash             String?
+  role                      String
+  emailVerified             Boolean  @default(false)
+  emailVerificationToken    String?  @unique
+  passwordResetToken        String?  @unique
+  passwordResetTokenExpires DateTime?
+  lastLogin                 DateTime?
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
+  sessions                  SessionParticipant[]
 }
 
 model Session {

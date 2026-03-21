@@ -5,6 +5,7 @@
 ## 📋 Overview
 
 CW-Engine is a full-stack collaborative whiteboard application built with:
+
 - **Frontend:** Next.js 16 + React 19 + TLDraw
 - **Backend:** Express.js + WebSocket + Prisma ORM
 - **Database:** PostgreSQL + Supabase
@@ -18,6 +19,7 @@ Perfect for collaborative brainstorming, design sessions, and facilitated worksh
 ## 🚀 Quick Start (Development)
 
 ### Prerequisites
+
 - **Node.js** 18+ or 20+
 - **pnpm** 10.28.2+ ([install](https://pnpm.io/installation))
 - **Docker & Docker Compose** (for PostgreSQL/Redis)
@@ -46,6 +48,7 @@ cp apps/frontend/.env.example apps/frontend/.env.local
 **For local development**, use these minimal values:
 
 **`apps/backend/.env.local`:**
+
 ```env
 DATABASE_URL="postgresql://postgres:postgres@localhost:5432/whiteboard_dev"
 JWT_SECRET="development-secret-key-min-32-chars-long-1234567890ab"
@@ -59,6 +62,7 @@ ALLOW_INSECURE_HTTP="true"
 ```
 
 **`apps/frontend/.env.local`:**
+
 ```env
 NEXT_PUBLIC_API_URL="http://localhost:4000"
 NEXT_PUBLIC_API_WS_URL="ws://localhost:4000"
@@ -88,6 +92,7 @@ pnpm prisma migrate deploy
 ### 5. Start Development Servers
 
 **Terminal 1 - Backend:**
+
 ```bash
 cd apps/backend
 pnpm dev
@@ -95,6 +100,7 @@ pnpm dev
 ```
 
 **Terminal 2 - Frontend:**
+
 ```bash
 cd apps/frontend
 pnpm dev
@@ -103,7 +109,7 @@ pnpm dev
 
 ### 6. Access the App
 
-Open **http://localhost:3000** in your browser.
+Open **<http://localhost:3000>** in your browser.
 
 ---
 
@@ -169,6 +175,7 @@ Telemetry Engine updates metrics
 ### Database Schema
 
 Key models:
+
 - **User** — User profiles with roles
 - **Session** — Whiteboard sessions with modes
 - **SessionParticipant** — Users in sessions
@@ -182,21 +189,25 @@ See [schema.prisma](apps/backend/prisma/schema.prisma) for full schema.
 ## 🔑 Key Features (Current)
 
 ✅ **Real-time Collaboration**
+
 - TLDraw canvas with Yjs CRDT sync
 - WebSocket bidirectional communication
 - Multi-user presence
 
 ✅ **Governance System**
+
 - Roles: FACILITATOR, CONTRIBUTOR, OBSERVER
 - Modes: FREE, LOCKED, DECISION
 - Permission-based drawing access
 
 ✅ **Event Tracking**
+
 - All canvas events logged to database
 - Telemetry metrics per session
 - Activity timeline data
 
 ✅ **Analytics**
+
 - Per-user edit counts
 - Dominance ratio
 - Active user count
@@ -207,6 +218,7 @@ See [schema.prisma](apps/backend/prisma/schema.prisma) for full schema.
 ## 🛠️ Development Commands
 
 ### Backend
+
 ```bash
 cd apps/backend
 
@@ -229,6 +241,7 @@ pnpm prisma migrate deploy
 ```
 
 ### Frontend
+
 ```bash
 cd apps/frontend
 
@@ -246,6 +259,7 @@ pnpm lint
 ```
 
 ### Root (Monorepo)
+
 ```bash
 # Install all dependencies
 pnpm install
@@ -265,6 +279,7 @@ pnpm -r <script>
 ### Local Development
 
 **View data:**
+
 ```bash
 # Using Prisma Studio (GUI)
 cd apps/backend
@@ -276,6 +291,7 @@ psql postgresql://postgres:postgres@localhost:5432/whiteboard_dev
 ```
 
 **Create migration:**
+
 ```bash
 cd apps/backend
 pnpm prisma migrate dev --name "add_feature_name"
@@ -283,6 +299,7 @@ pnpm prisma migrate dev --name "add_feature_name"
 ```
 
 **Reset database (⚠️ development only):**
+
 ```bash
 cd apps/backend
 pnpm prisma migrate reset
@@ -321,11 +338,13 @@ pnpm prisma migrate reset
 ### Development vs Production
 
 **Development (.env.local):**
+
 - Use local PostgreSQL/Redis via Docker
 - `ALLOW_INSECURE_HTTP=true`
 - Detailed logging
 
 **Production (.env):**
+
 - Use Supabase PostgreSQL
 - Real OAuth credentials
 - Strong JWT_SECRET
@@ -349,6 +368,7 @@ pnpm prisma migrate reset
 ### Deploy to Production
 
 Currently configured for:
+
 - **Frontend:** Vercel
 - **Backend:** Railway
 - **Database:** Supabase
@@ -356,6 +376,7 @@ Currently configured for:
 See [.github/workflows/deploy.yml](.github/workflows/deploy.yml) for CI/CD pipeline.
 
 **Manual deploy:**
+
 ```bash
 # Frontend (Vercel)
 vercel --prod
@@ -378,6 +399,7 @@ curl http://localhost:4000/health
 ### Logs
 
 **Backend:**
+
 ```bash
 # View real-time logs
 docker logs -f whiteboard_postgres
@@ -387,6 +409,7 @@ pnpm --filter=backend dev
 ```
 
 **Frontend:**
+
 ```bash
 # Browser DevTools
 F12 → Console tab
@@ -434,6 +457,7 @@ pnpm --filter=frontend test --coverage
 See [API_DOCS.md](./API_DOCS.md) for full endpoint documentation (coming soon).
 
 Key endpoints:
+
 - `POST /api/auth/register` — User signup
 - `POST /api/auth/login` — User login
 - `POST /api/sessions` — Create session
@@ -453,6 +477,7 @@ Error: connect ECONNREFUSED 127.0.0.1:5432
 ```
 
 **Solution:**
+
 ```bash
 # Ensure Docker is running
 docker-compose ps
@@ -466,6 +491,7 @@ WebSocket is closed before the connection is established
 ```
 
 **Solution:**
+
 - Ensure backend is running on port 4000
 - Check `NEXT_PUBLIC_API_WS_URL` in frontend .env.local
 - Frontend and backend CORS must match
@@ -477,6 +503,7 @@ Error: listen EADDRINUSE: address already in use :::4000
 ```
 
 **Solution:**
+
 ```bash
 # Find process using port
 lsof -i :4000
@@ -527,4 +554,4 @@ See [IMPLEMENTATION_PLAN.md](./IMPLEMENTATION_PLAN.md) for detailed roadmap.
 
 ---
 
-**Questions?** Check [Discussions](https://github.com/your-repo/discussions) or open an [Issue](https://github.com/your-repo/issues)." 
+**Questions?** Check [Discussions](https://github.com/your-repo/discussions) or open an [Issue](https://github.com/your-repo/issues)."
