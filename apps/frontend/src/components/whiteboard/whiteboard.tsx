@@ -65,7 +65,7 @@ export default function Whiteboard({ sessionId, userId }: Props) {
   }, [mode, editorInstance])
 
   return (
-    <div className="relative w-screen h-screen">
+    <div className="relative w-full h-full">
       {mode === "LOCKED" && (
         <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-red-500 text-white px-6 py-2 rounded-lg z-50">
           Session Locked

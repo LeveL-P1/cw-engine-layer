@@ -3,6 +3,7 @@
 import { ReactNode } from "react"
 import { Sidebar } from "../layout/Sidebar"
 import { Topbar } from "../layout/Topbar"
+import { ModeControlPanel } from "../governance/ModeControlPanel"
 
 interface AppShellProps {
   children: ReactNode
@@ -16,10 +17,14 @@ export function AppShell({ children }: AppShellProps) {
       <div className="flex flex-col flex-1 overflow-hidden">
         <Topbar />
 
-        <main className="flex-1 overflow-auto p-6 bg-zinc-900">
+        <main className="flex-1 overflow-hidden bg-zinc-900 relative">
           {children}
         </main>
       </div>
+
+      <aside className="w-64 bg-zinc-900 border-l border-zinc-800 p-6">
+        <ModeControlPanel />
+      </aside>
     </div>
   )
 }

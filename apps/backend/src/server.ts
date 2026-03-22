@@ -9,8 +9,6 @@ import { subscribe } from "./event-bus/eventBus"
 import { persistEvent } from "./services/eventService"
 import analyticsRoutes from "./routes/analyticsRoutes"
 import sessionRoutes from "./routes/sessionRoutes"
-import authRoutes from "./routes/authRoutes"
-import { authMiddleware } from "./middleware/authMiddleware"
 import cors from "cors"
 
 
@@ -30,17 +28,8 @@ app.use(cors({
 
 app.use(express.json())
 
-app.use("/api/auth", authRoutes)
-
-const authEnabled = Boolean(process.env.JWT_SECRET)
-
-if (authEnabled) {
-  app.use("/api", authMiddleware, analyticsRoutes)
-  app.use("/api/sessions", authMiddleware, sessionRoutes)
-} else {
-  app.use("/api", analyticsRoutes)
-  app.use("/api/sessions", sessionRoutes)
-}
+app.use("/api", analyticsRoutes)
+app.use("/api/sessions", sessionRoutes)
 
 setInterval(async () => {
   const sessionIds = getAllSessionIds()
