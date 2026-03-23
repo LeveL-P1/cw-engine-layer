@@ -15,7 +15,7 @@ export async function middleware(request: NextRequest) {
           return request.cookies.getAll()
         },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) => request.cookies.set(name, value))
+          cookiesToSet.forEach(({ name, value, options }) => request.cookies.set(name, value, options))
           supabaseResponse = NextResponse.next({
             request,
           })
@@ -37,6 +37,7 @@ export async function middleware(request: NextRequest) {
 
   if (
     !user &&
+    !request.nextUrl.pathname.startsWith('/auth') &&
     !request.nextUrl.pathname.startsWith('/auth/login') &&
     !request.nextUrl.pathname.startsWith('/auth/signup') &&
     !request.nextUrl.pathname.startsWith('/auth/forgot-password') &&
@@ -45,7 +46,7 @@ export async function middleware(request: NextRequest) {
   ) {
     // no user, potentially respond by redirecting the user to the login page
     const url = request.nextUrl.clone()
-    url.pathname = '/auth/login'
+    url.pathname = '/auth'
     return NextResponse.redirect(url)
   }
 

@@ -9,7 +9,7 @@ import {
   useCallback
 } from "react"
 import { supabase } from "@/lib/supabase"
-import type { User } from "@supabase/supabase-js"
+import { clearStoredSession } from "@/lib/session-storage"
 
 export type Role = "FACILITATOR" | "CONTRIBUTOR" | "OBSERVER"
 
@@ -61,7 +61,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      async (_event, session) => {
         if (session) {
           setToken(session.access_token)
           setUser({
@@ -73,6 +73,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         } else {
           setToken(null)
           setUser(null)
+          clearStoredSession()
         }
         setIsLoading(false)
       }
@@ -115,9 +116,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = useCallback(async () => {
     const { error } = await supabase.auth.signOut()
     if (error) throw new Error(error.message)
+    clearStoredSession()
   }, [])
 
-  const verifyEmail = useCallback(async (token: string) => {
+  const verifyEmail = useCallback(async (_token: string) => {
+    void _token
     // Supabase handles email verification automatically
     // This might not be needed
   }, [])
@@ -127,7 +130,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (error) throw new Error(error.message)
   }, [])
 
-  const resetPassword = useCallback(async (token: string, newPassword: string, confirmPassword: string) => {
+  const resetPassword = useCallback(async (_token: string, newPassword: string, confirmPassword: string) => {
+    void _token
     if (newPassword !== confirmPassword) {
       throw new Error("Passwords don't match")
     }

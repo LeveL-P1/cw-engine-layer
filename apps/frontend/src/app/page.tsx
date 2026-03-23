@@ -11,9 +11,9 @@ export default function Home() {
   useEffect(() => {
     if (!isLoading) {
       if (isAuthenticated) {
-        router.push("/whiteboard")
+        router.push("/sessions")
       } else {
-        router.push("/auth/login")
+        router.push("/auth")
       }
     }
   }, [isAuthenticated, isLoading, router])

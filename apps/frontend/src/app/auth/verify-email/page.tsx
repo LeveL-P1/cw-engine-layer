@@ -1,48 +1,31 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import { useSearchParams, useRouter } from "next/navigation"
+import { useState } from "react"
+import { useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { useAuth } from "@/context/auth-context"
 
 export default function VerifyEmailPage() {
   const searchParams = useSearchParams()
-  const router = useRouter()
-  const { verifyEmail, resendVerificationEmail, isLoading } = useAuth()
+  const { resendVerificationEmail, isLoading } = useAuth()
 
   const token = searchParams.get("token")
   const email = searchParams.get("email")
 
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
-  const [isVerifying, setIsVerifying] = useState(!!token)
-
-  useEffect(() => {
-    if (token) {
-      verifyEmailToken()
-    }
-  }, [token])
-
-  const verifyEmailToken = async () => {
-    try {
-      await verifyEmail(token!)
-      setSuccess("Email verified successfully! Redirecting to login...")
-      setTimeout(() => {
-        router.push("/auth/login")
-      }, 2000)
-    } catch (err: any) {
-      setError(err.message || "Email verification failed")
-      setIsVerifying(false)
-    }
-  }
 
   const handleResendEmail = async () => {
     if (!email) return
     try {
       await resendVerificationEmail(email)
       setSuccess("Verification email sent! Please check your inbox.")
-    } catch (err: any) {
-      setError(err.message || "Failed to resend verification email")
+    } catch (caughtError: unknown) {
+      const message =
+        caughtError instanceof Error
+          ? caughtError.message
+          : "Failed to resend verification email"
+      setError(message)
     }
   }
 
@@ -51,7 +34,9 @@ export default function VerifyEmailPage() {
       <div className="w-full max-w-md bg-slate-800 border border-slate-700 rounded-lg shadow-xl p-8">
         <h1 className="text-3xl font-bold text-white mb-2">Verify Your Email</h1>
         <p className="text-slate-400 mb-6">
-          {token ? "Verifying your email..." : "Complete your sign up by verifying your email address"}
+          {token
+            ? "Your verification link was opened. Continue to sign in after Supabase confirms your email."
+            : "Complete your sign up by verifying your email address"}
         </p>
 
         {error && (
@@ -66,13 +51,19 @@ export default function VerifyEmailPage() {
           </div>
         )}
 
-        {isVerifying && (
-          <div className="flex items-center justify-center py-8">
-            <div className="animate-spin h-8 w-8 border-4 border-blue-500 border-t-transparent rounded-full"></div>
+        {token ? (
+          <div className="space-y-4">
+            <p className="text-slate-300 text-sm bg-slate-700/50 p-4 rounded-lg">
+              If your email has been verified successfully, you can continue to sign in.
+            </p>
+            <Link
+              href="/auth?mode=signin"
+              className="block w-full rounded-lg bg-blue-600 py-2 text-center font-medium text-white transition hover:bg-blue-700"
+            >
+              Go to Sign In
+            </Link>
           </div>
-        )}
-
-        {!token && !isVerifying && (
+        ) : (
           <div className="space-y-4">
             <p className="text-slate-300 text-sm bg-slate-700/50 p-4 rounded-lg">
               We&apos;ve sent a verification link to your email address. Click the link to verify your email and complete your sign up.
@@ -96,7 +87,7 @@ export default function VerifyEmailPage() {
         <div className="mt-6 pt-6 border-t border-slate-700 text-center">
           <p className="text-slate-400 text-sm">
             Already verified?{" "}
-            <Link href="/auth/login" className="text-blue-400 hover:text-blue-300 font-medium">
+            <Link href="/auth?mode=signin" className="text-blue-400 hover:text-blue-300 font-medium">
               Sign in
             </Link>
           </p>

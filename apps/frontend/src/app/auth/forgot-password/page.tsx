@@ -20,8 +20,12 @@ export default function ForgotPasswordPage() {
       await forgotPassword(email)
       setSuccess("Password reset link has been sent to your email. Please check your inbox.")
       setEmail("")
-    } catch (err: any) {
-      setError(err.message || "Failed to send reset email")
+    } catch (caughtError: unknown) {
+      const message =
+        caughtError instanceof Error
+          ? caughtError.message
+          : "Failed to send reset email"
+      setError(message)
     }
   }
 
@@ -71,7 +75,7 @@ export default function ForgotPasswordPage() {
         <div className="mt-6 pt-6 border-t border-slate-700 text-center">
           <p className="text-slate-400 text-sm">
             Remember your password?{" "}
-            <Link href="/auth/login" className="text-blue-400 hover:text-blue-300 font-medium">
+            <Link href="/auth?mode=signin" className="text-blue-400 hover:text-blue-300 font-medium">
               Sign in
             </Link>
           </p>

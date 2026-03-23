@@ -55,10 +55,14 @@ export default function ResetPasswordPage() {
       await resetPassword(token, formData.newPassword, formData.confirmPassword)
       setSuccess("Password reset successfully! Redirecting to login...")
       setTimeout(() => {
-        router.push("/auth/login")
+        router.push("/auth?mode=signin")
       }, 2000)
-    } catch (err: any) {
-      setError(err.message || "Password reset failed")
+    } catch (caughtError: unknown) {
+      const message =
+        caughtError instanceof Error
+          ? caughtError.message
+          : "Password reset failed"
+      setError(message)
     }
   }
 
@@ -128,7 +132,7 @@ export default function ResetPasswordPage() {
         <div className="mt-6 pt-6 border-t border-slate-700 text-center">
           <p className="text-slate-400 text-sm">
             Remember your password?{" "}
-            <Link href="/auth/login" className="text-blue-400 hover:text-blue-300 font-medium">
+            <Link href="/auth?mode=signin" className="text-blue-400 hover:text-blue-300 font-medium">
               Sign in
             </Link>
           </p>
