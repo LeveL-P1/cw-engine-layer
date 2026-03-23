@@ -14,7 +14,6 @@ export type ModeType = "FREE" | "DECISION" | "LOCKED"
 
 interface SessionState {
   sessionId: string
-  /** The authenticated user's id for this session */
   userId: string
   sessionName: string
   role: RoleType
@@ -46,7 +45,7 @@ export function SessionProvider({
 }) {
   const [mode, setModeState] = useState(initialState.mode)
   const [modeStartedAt, setModeStartedAt] = useState(
-    initialState.modeStartedAt
+    initialState.modeStartedAt,
   )
 
   const setMode = (newMode: ModeType) => {
@@ -54,15 +53,11 @@ export function SessionProvider({
     setModeStartedAt(Date.now())
   }
 
-  // Establish the WebSocket connection once per session and wire
-  // MODE_CHANGED events directly into this context's mode state.
   useEffect(() => {
     connectWebSocket(initialState.sessionId, initialState.userId)
     setModeListener((newMode) => {
       setMode(newMode as ModeType)
     })
-    // setMode is intentionally omitted — setModeState from useState is stable
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialState.sessionId, initialState.userId])
 
   return (

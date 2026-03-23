@@ -9,7 +9,6 @@ import { UserPresence } from "@/components/session/UserPresence"
 
 export function Topbar() {
   const {
-    activeUsers,
     mode,
     sessionStartTime,
     modeStartedAt,

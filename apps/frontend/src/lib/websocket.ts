@@ -2,6 +2,7 @@
 let socket: WebSocket | null = null
 let modeHandler: ((mode: string) => void) | null = null
 let canvasEventHandler: ((payload: any) => void) | null = null
+const WS_URL = process.env.NEXT_PUBLIC_API_WS_URL ?? "ws://localhost:4000"
 
 export function setModeListener(handler: (mode: string) => void) {
   modeHandler = handler
@@ -25,7 +26,7 @@ export function connectWebSocket(sessionId: string, userId: string) {
     return
   }
 
-  socket = new WebSocket("ws://localhost:4000")
+  socket = new WebSocket(WS_URL)
 
   socket.onopen = () => {
     socket?.send(

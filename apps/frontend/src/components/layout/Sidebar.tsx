@@ -8,12 +8,12 @@ import { useSession } from "@/context/session-context"
 
 export function Sidebar() {
   const pathname = usePathname()
-  const { sessionName, role, mode } = useSession()
+  const { sessionId, sessionName, role, mode } = useSession()
 
   const navItems = [
-    { label: "Whiteboard", href: "/whiteboard" },
-    { label: "Analytics", href: "/dashboard" },
-    { label: "Session Summary", href: "/summary" },
+    { label: "Whiteboard", href: `/whiteboard/${sessionId}` },
+    { label: "Analytics", href: `/dashboard/${sessionId}` },
+    { label: "Session Summary", href: `/summary/${sessionId}` },
   ]
 
   return (

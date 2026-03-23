@@ -15,11 +15,11 @@ export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) 
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
-      router.push("/auth/login")
+      router.replace("/auth")
     }
 
     if (!isLoading && requiredRole && user?.role !== requiredRole) {
-      router.push("/dashboard")
+      router.replace("/sessions")
     }
   }, [isAuthenticated, isLoading, user, requiredRole, router])
 

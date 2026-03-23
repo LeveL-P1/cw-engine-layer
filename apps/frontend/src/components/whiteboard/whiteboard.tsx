@@ -13,6 +13,8 @@ interface Props {
   userId: string
 }
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000"
+
 export default function Whiteboard({ sessionId, userId }: Props) {
   // Mode is owned by SessionProvider — no local duplicate state
   const { mode, setMode } = useSession()
@@ -21,7 +23,7 @@ export default function Whiteboard({ sessionId, userId }: Props) {
   // Sync the actual session mode from the backend once on mount.
   // SessionProvider keeps it live via WS after this.
   useEffect(() => {
-    fetch(`http://localhost:4000/api/mode/${sessionId}`)
+    fetch(`${API_URL}/api/mode/${sessionId}`)
       .then((res) => res.json())
       .then((data) => {
         if (data.mode) setMode(data.mode as ModeType)
