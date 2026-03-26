@@ -25,6 +25,7 @@ router.post("/", async (req, res) => {
   try {
     const session = await prisma.session.create({
       data: {
+        name: typeof name === "string" && name.trim().length > 0 ? name.trim() : null,
         currentMode: "FREE",
       },
     })
@@ -84,10 +85,20 @@ router.post("/:sessionId/join", async (req, res) => {
       },
     })
 
-    const participant = await prisma.sessionParticipant.create({
-      data: {
+    const participant = await prisma.sessionParticipant.upsert({
+      where: {
+        sessionId_userId: {
+          sessionId,
+          userId: effectiveUserId,
+        },
+      },
+      update: {
+        role,
+      },
+      create: {
         sessionId,
         userId: effectiveUserId,
+        role,
       },
     })
 
@@ -95,6 +106,7 @@ router.post("/:sessionId/join", async (req, res) => {
       id: participant.id,
       sessionId: participant.sessionId,
       userId: participant.userId,
+      role: participant.role,
       joinedAt: participant.joinedAt,
     })
   } catch {

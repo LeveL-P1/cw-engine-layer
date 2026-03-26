@@ -42,7 +42,7 @@ Backend:
 
 ```bash
 cd apps/backend
-npm run dev
+pnpm dev
 ```
 
 Frontend:
@@ -70,7 +70,15 @@ Backend typecheck:
 
 ```bash
 cd apps/backend
-.\node_modules\.bin\tsc.cmd --noEmit
+pnpm typecheck
+```
+
+Prisma checks:
+
+```bash
+cd apps/backend
+pnpm prisma:validate
+pnpm prisma:status
 ```
 
 ## Notes
@@ -78,3 +86,4 @@ cd apps/backend
 - There is currently no committed Docker setup in this repo.
 - There is currently no committed CI workflow in this repo.
 - The root README should stay aligned with checked-in code, not future plans.
+- For Supabase connection strings, percent-encode special password characters and prefer a separate `DIRECT_URL` for Prisma CLI workflows.

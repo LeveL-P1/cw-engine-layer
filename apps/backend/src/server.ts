@@ -10,6 +10,8 @@ import { persistEvent } from "./services/eventService"
 import analyticsRoutes from "./routes/analyticsRoutes"
 import sessionRoutes from "./routes/sessionRoutes"
 import cors from "cors"
+import { prisma } from "./lib/prisma"
+import { env } from "./lib/env"
 
 
 const app = express()
@@ -23,7 +25,7 @@ subscribe(persistEvent)
 
 
 app.use(cors({
-  origin: "http://localhost:3000"
+  origin: env.corsOrigin
 }))
 
 app.use(express.json())
@@ -38,11 +40,24 @@ setInterval(async () => {
   }
 }, 60000)
 
-app.get("/health", (_, res) => {
-  res.json({ status: "ok" })
+app.get("/health", async (_, res) => {
+  try {
+    await prisma.$queryRawUnsafe("SELECT 1")
+    res.json({ status: "ok", database: "up" })
+  } catch {
+    res.status(503).json({ status: "degraded", database: "down" })
+  }
 })
 
-server.listen(4000, () => {
-  console.log("Server running on port 4000")
+async function start() {
+  await prisma.$connect()
+  server.listen(env.port, () => {
+    console.log(`Server running on port ${env.port}`)
+  })
+}
+
+void start().catch((error) => {
+  console.error("Failed to start backend", error)
+  process.exit(1)
 })
 
