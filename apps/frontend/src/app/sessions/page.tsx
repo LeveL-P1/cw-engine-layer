@@ -11,15 +11,26 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000"
 
 export default function SessionsPage() {
   const router = useRouter()
-  const { user } = useAuth()
+  const { user, logout } = useAuth()
   const [displayName, setDisplayName] = useState("")
   const [joinSessionId, setJoinSessionId] = useState("")
   const [submitting, setSubmitting] = useState(false)
+  const [isLoggingOut, setIsLoggingOut] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const resolvedDisplayName = useMemo(() => {
     return displayName.trim() || user?.name || ""
   }, [displayName, user?.name])
+
+  const handleLogout = async () => {
+    try {
+      setIsLoggingOut(true)
+      await logout()
+      router.replace("/auth")
+    } finally {
+      setIsLoggingOut(false)
+    }
+  }
 
   const handleStartSession = async () => {
     if (!user?.email) {
@@ -153,13 +164,26 @@ export default function SessionsPage() {
     <ProtectedRoute>
       <div className="flex min-h-screen items-center justify-center bg-zinc-950 px-4 text-zinc-100">
         <div className="w-full max-w-md space-y-6 rounded-xl border border-zinc-800 bg-zinc-900 p-8">
-          <div className="space-y-2">
-            <h1 className="text-2xl font-semibold">
-              Start a governed whiteboard session
-            </h1>
-            <p className="text-sm text-zinc-400">
-              Create a new session and enter the live whiteboard.
-            </p>
+          <div className="flex items-start justify-between gap-4">
+            <div className="space-y-2">
+              <h1 className="text-2xl font-semibold">
+                Start a governed whiteboard session
+              </h1>
+              <p className="text-sm text-zinc-400">
+                Signed in as {user?.name ?? "user"}.
+              </p>
+              <p className="text-sm text-zinc-500">
+                Create a new session or join an existing one with its ID.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={handleLogout}
+              disabled={isLoggingOut}
+              className="rounded-md border border-zinc-700 px-3 py-2 text-sm font-medium text-zinc-100 transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {isLoggingOut ? "Signing out..." : "Logout"}
+            </button>
           </div>
 
           <div className="space-y-2">
@@ -187,14 +211,14 @@ export default function SessionsPage() {
           <div className="grid gap-3 sm:grid-cols-2">
             <button
               onClick={handleStartSession}
-              disabled={submitting}
+              disabled={submitting || isLoggingOut}
               className="w-full rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-500 disabled:opacity-60"
             >
               {submitting ? "Working..." : "Start Session"}
             </button>
             <button
               onClick={handleJoinSession}
-              disabled={submitting}
+              disabled={submitting || isLoggingOut}
               className="w-full rounded-md border border-zinc-700 bg-zinc-950 px-4 py-2 text-sm font-medium text-zinc-100 hover:bg-zinc-900 disabled:opacity-60"
             >
               {submitting ? "Working..." : "Join Session"}
