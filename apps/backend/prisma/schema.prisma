@@ -9,23 +9,18 @@ datasource db {
 }
 
 model User {
-  id                        String               @id
-  name                      String
-  role                      String
-  createdAt                 DateTime             @default(now())
-  email                     String               @unique
-  emailVerificationToken    String?              @unique
-  emailVerified             Boolean              @default(false)
-  lastLogin                 DateTime?
-  passwordResetToken        String?              @unique
-  passwordResetTokenExpires DateTime?
-  password_hash             String?
-  updatedAt                 DateTime             @updatedAt
+  id        String               @id
+  name      String
+  role      String
+  createdAt DateTime             @default(now())
+  email     String               @unique
+  updatedAt DateTime             @updatedAt
   sessions                  SessionParticipant[]
 }
 
 model Session {
   id           String               @id @default(uuid())
+  name         String?
   startTime    DateTime             @default(now())
   endTime      DateTime?
   currentMode  String
@@ -38,9 +33,13 @@ model SessionParticipant {
   id        String   @id @default(uuid())
   sessionId String
   userId    String
+  role      String   @default("CONTRIBUTOR")
   joinedAt  DateTime @default(now())
   session   Session  @relation(fields: [sessionId], references: [id])
   user      User     @relation(fields: [userId], references: [id])
+
+  @@unique([sessionId, userId])
+  @@index([userId])
 }
 
 model EventLog {
@@ -51,6 +50,8 @@ model EventLog {
   payload   Json
   timestamp DateTime @default(now())
   session   Session  @relation(fields: [sessionId], references: [id])
+
+  @@index([sessionId, timestamp])
 }
 
 model MetricsSnapshot {
@@ -62,4 +63,6 @@ model MetricsSnapshot {
   activeUsers    Int
   mode           String
   session        Session  @relation(fields: [sessionId], references: [id])
+
+  @@index([sessionId, timestamp])
 }
