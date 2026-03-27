@@ -6,7 +6,8 @@ export interface StoredSession {
   sessionId: string
   userId: string
   role: StoredRole
-  name: string
+  displayName: string
+  sessionName: string
 }
 
 const STORAGE_KEY = "currentSession"
@@ -22,7 +23,32 @@ export function getStoredSession(): StoredSession | null {
   }
 
   try {
-    return JSON.parse(raw) as StoredSession
+    const parsed = JSON.parse(raw) as Partial<StoredSession> & { name?: string }
+
+    if (
+      typeof parsed.sessionId !== "string" ||
+      typeof parsed.userId !== "string" ||
+      typeof parsed.role !== "string"
+    ) {
+      window.sessionStorage.removeItem(STORAGE_KEY)
+      return null
+    }
+
+    return {
+      sessionId: parsed.sessionId,
+      userId: parsed.userId,
+      role: parsed.role as StoredRole,
+      displayName:
+        typeof parsed.displayName === "string"
+          ? parsed.displayName
+          : typeof parsed.name === "string"
+            ? parsed.name
+            : "",
+      sessionName:
+        typeof parsed.sessionName === "string"
+          ? parsed.sessionName
+          : "Whiteboard Session",
+    }
   } catch {
     window.sessionStorage.removeItem(STORAGE_KEY)
     return null

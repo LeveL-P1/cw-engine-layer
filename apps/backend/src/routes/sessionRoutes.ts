@@ -32,12 +32,42 @@ router.post("/", async (req, res) => {
 
     return res.status(201).json({
       id: session.id,
-      name: name ?? null,
+      name: session.name,
       currentMode: session.currentMode,
       startTime: session.startTime,
     })
   } catch (error) {
     return res.status(500).json({ message: "Failed to create session" })
+  }
+})
+
+router.get("/:sessionId", async (req, res) => {
+  const { sessionId } = req.params
+
+  try {
+    const session = await prisma.session.findUnique({
+      where: { id: sessionId },
+      include: {
+        participants: {
+          select: { id: true },
+        },
+      },
+    })
+
+    if (!session) {
+      return res.status(404).json({ message: "Session not found" })
+    }
+
+    return res.json({
+      id: session.id,
+      name: session.name,
+      currentMode: session.currentMode,
+      startTime: session.startTime,
+      endTime: session.endTime,
+      participantCount: session.participants.length,
+    })
+  } catch {
+    return res.status(500).json({ message: "Failed to load session" })
   }
 })
 

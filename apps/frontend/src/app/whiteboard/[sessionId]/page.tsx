@@ -16,7 +16,8 @@ export default function WhiteboardSessionPage() {
     sessionId: string
     userId: string
     role: RoleType
-    name: string
+    displayName: string
+    sessionName: string
   }>(() => getStoredSession())
 
   useEffect(() => {
@@ -41,14 +42,14 @@ export default function WhiteboardSessionPage() {
         initialState={{
           sessionId: sessionState.sessionId,
           userId: sessionState.userId,
-          sessionName: "Whiteboard Session",
+          sessionName: sessionState.sessionName,
           role: sessionState.role,
           mode: "FREE",
           dominanceRatio: 0,
           activeUsers: [
             {
               id: sessionState.userId,
-              name: sessionState.name,
+              name: sessionState.displayName,
               role: sessionState.role,
             },
           ],

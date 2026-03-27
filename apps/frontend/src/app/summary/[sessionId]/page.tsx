@@ -42,7 +42,8 @@ export default function SessionSummaryPage() {
     sessionId: string
     userId: string
     role: RoleType
-    name: string
+    displayName: string
+    sessionName: string
   }>(() => getStoredSession())
   const [metrics, setMetrics] = useState<Metrics | null>(null)
   const [modeBreakdown, setModeBreakdown] = useState<
@@ -108,7 +109,7 @@ export default function SessionSummaryPage() {
     }
   }, [params.sessionId, sessionInfo])
 
-  const sessionName = "Whiteboard Session"
+  const sessionName = sessionInfo?.sessionName ?? "Whiteboard Session"
   const totalEdits = metrics?.totalEdits ?? 0
   const dominanceRatio = metrics?.dominanceRatio ?? 0
   const participants = metrics?.activeUsers ?? 1
@@ -148,7 +149,7 @@ export default function SessionSummaryPage() {
             activeUsers: [
               {
                 id: sessionInfo.userId,
-                name: sessionInfo.name,
+                name: sessionInfo.displayName,
                 role: sessionInfo.role,
               },
             ],

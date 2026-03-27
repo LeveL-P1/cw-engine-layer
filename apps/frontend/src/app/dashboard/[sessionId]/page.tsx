@@ -61,7 +61,8 @@ export default function DashboardSessionPage() {
     sessionId: string
     userId: string
     role: RoleType
-    name: string
+    displayName: string
+    sessionName: string
   }>(() => getStoredSession())
   const [timeline, setTimeline] = useState<TimelinePoint[]>([])
   const [modeTransitions, setModeTransitions] = useState<ModeTransition[]>([])
@@ -198,14 +199,14 @@ export default function DashboardSessionPage() {
           initialState={{
             sessionId: sessionInfo.sessionId,
             userId: sessionInfo.userId,
-            sessionName: "Whiteboard Session",
+            sessionName: sessionInfo.sessionName,
             role: sessionInfo.role,
             mode: mode as "FREE" | "DECISION" | "LOCKED",
             dominanceRatio: metrics.dominanceRatio,
             activeUsers: [
               {
                 id: sessionInfo.userId,
-                name: sessionInfo.name,
+                name: sessionInfo.displayName,
                 role: sessionInfo.role,
               },
             ],

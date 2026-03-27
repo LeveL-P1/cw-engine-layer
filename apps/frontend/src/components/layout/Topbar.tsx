@@ -14,12 +14,14 @@ export function Topbar() {
   const router = useRouter()
   const { user, logout } = useAuth()
   const {
+    sessionId,
     sessionName,
     mode,
     sessionStartTime,
     modeStartedAt,
   } = useSession()
   const [isLoggingOut, setIsLoggingOut] = useState(false)
+  const [inviteCopied, setInviteCopied] = useState(false)
 
   const sessionElapsed = useTimer(sessionStartTime)
   const modeElapsed = useTimer(modeStartedAt)
@@ -32,6 +34,14 @@ export function Topbar() {
     } finally {
       setIsLoggingOut(false)
     }
+  }
+
+  const handleCopyInvite = async () => {
+    const inviteUrl = `${window.location.origin}/sessions?sessionId=${sessionId}`
+
+    await navigator.clipboard.writeText(inviteUrl)
+    setInviteCopied(true)
+    window.setTimeout(() => setInviteCopied(false), 2000)
   }
 
   return (
@@ -49,6 +59,14 @@ export function Topbar() {
         <Badge mode={mode}>{mode}</Badge>
 
         <ModeControlPanel />
+
+        <button
+          type="button"
+          onClick={handleCopyInvite}
+          className="rounded-md border border-zinc-700 px-3 py-2 text-sm font-medium text-zinc-200 transition hover:bg-zinc-800"
+        >
+          {inviteCopied ? "Invite copied" : "Copy Invite"}
+        </button>
 
         <div className="text-sm text-zinc-300">
           Session: {formatDuration(sessionElapsed)}

@@ -1,18 +1,36 @@
 "use client"
 
-import { useMemo, useState } from "react"
-import { useRouter } from "next/navigation"
+import { useEffect, useMemo, useState } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import { ProtectedRoute } from "@/components/ProtectedRoute"
 import { useAuth } from "@/context/auth-context"
 import { setStoredSession } from "@/lib/session-storage"
 import type { RoleType } from "@/context/session-context"
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000"
+const DEFAULT_SESSION_NAME = "Whiteboard Session"
+
+function resolveJoinSessionId(input: string): string {
+  const trimmed = input.trim()
+  if (!trimmed) {
+    return ""
+  }
+
+  try {
+    const parsedUrl = new URL(trimmed)
+    const fromQuery = parsedUrl.searchParams.get("sessionId")
+    return fromQuery?.trim() || trimmed
+  } catch {
+    return trimmed
+  }
+}
 
 export default function SessionsPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { user, logout } = useAuth()
   const [displayName, setDisplayName] = useState("")
+  const [sessionName, setSessionName] = useState(DEFAULT_SESSION_NAME)
   const [joinSessionId, setJoinSessionId] = useState("")
   const [submitting, setSubmitting] = useState(false)
   const [isLoggingOut, setIsLoggingOut] = useState(false)
@@ -21,6 +39,16 @@ export default function SessionsPage() {
   const resolvedDisplayName = useMemo(() => {
     return displayName.trim() || user?.name || ""
   }, [displayName, user?.name])
+  const resolvedSessionName = useMemo(() => {
+    return sessionName.trim() || DEFAULT_SESSION_NAME
+  }, [sessionName])
+  const invitedSessionId = searchParams.get("sessionId")?.trim() ?? ""
+
+  useEffect(() => {
+    if (invitedSessionId) {
+      setJoinSessionId(invitedSessionId)
+    }
+  }, [invitedSessionId])
 
   const handleLogout = async () => {
     try {
@@ -54,7 +82,7 @@ export default function SessionsPage() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ name: "Whiteboard Session" }),
+        body: JSON.stringify({ name: resolvedSessionName }),
       })
 
       if (!createRes.ok) {
@@ -85,7 +113,8 @@ export default function SessionsPage() {
         sessionId: created.id,
         userId: user.id,
         role,
-        name: resolvedDisplayName,
+        displayName: resolvedDisplayName,
+        sessionName: created.name ?? resolvedSessionName,
       })
 
       router.push(`/whiteboard/${created.id}`)
@@ -111,7 +140,9 @@ export default function SessionsPage() {
       return
     }
 
-    if (!joinSessionId.trim()) {
+    const sessionId = resolveJoinSessionId(joinSessionId)
+
+    if (!sessionId) {
       setError("Please enter a session ID to join.")
       return
     }
@@ -121,7 +152,14 @@ export default function SessionsPage() {
 
     try {
       const role: RoleType = "CONTRIBUTOR"
-      const sessionId = joinSessionId.trim()
+
+      const sessionRes = await fetch(`${API_URL}/api/sessions/${sessionId}`)
+      if (!sessionRes.ok) {
+        const sessionError = await sessionRes.json().catch(() => null)
+        throw new Error(sessionError?.message ?? "Session not found")
+      }
+
+      const session = await sessionRes.json()
 
       const joinRes = await fetch(`${API_URL}/api/sessions/${sessionId}/join`, {
         method: "POST",
@@ -145,7 +183,8 @@ export default function SessionsPage() {
         sessionId,
         userId: user.id,
         role,
-        name: resolvedDisplayName,
+        displayName: resolvedDisplayName,
+        sessionName: session.name ?? DEFAULT_SESSION_NAME,
       })
 
       router.push(`/whiteboard/${sessionId}`)
@@ -173,7 +212,9 @@ export default function SessionsPage() {
                 Signed in as {user?.name ?? "user"}.
               </p>
               <p className="text-sm text-zinc-500">
-                Create a new session or join an existing one with its ID.
+                {invitedSessionId
+                  ? "An invite link pre-filled the session for you. Enter your display name and join."
+                  : "Create a new session or join an existing one with its invite link or ID."}
               </p>
             </div>
             <button
@@ -197,12 +238,22 @@ export default function SessionsPage() {
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm text-zinc-300">Session ID to join</label>
+            <label className="text-sm text-zinc-300">New session name</label>
+            <input
+              value={sessionName}
+              onChange={(event) => setSessionName(event.target.value)}
+              className="w-full rounded-md border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder={DEFAULT_SESSION_NAME}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm text-zinc-300">Session invite or ID</label>
             <input
               value={joinSessionId}
               onChange={(event) => setJoinSessionId(event.target.value)}
               className="w-full rounded-md border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Paste an existing session ID"
+              placeholder="Paste an invite session ID"
             />
           </div>
 
@@ -214,7 +265,7 @@ export default function SessionsPage() {
               disabled={submitting || isLoggingOut}
               className="w-full rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-500 disabled:opacity-60"
             >
-              {submitting ? "Working..." : "Start Session"}
+              {submitting ? "Working..." : "Create Session"}
             </button>
             <button
               onClick={handleJoinSession}
