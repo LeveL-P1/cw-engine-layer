@@ -7,6 +7,24 @@ import { SessionProvider, type RoleType } from "@/context/session-context"
 import { AppShell } from "@/components/layout/AppShell"
 import { ProtectedRoute } from "@/components/ProtectedRoute"
 import { getStoredSession } from "@/lib/session-storage"
+import {
+  fetchSessionDetails,
+  type SessionDetailsDto,
+} from "@/lib/session-api"
+
+function getFallbackActiveUsers(sessionState: {
+  userId: string
+  displayName: string
+  role: RoleType
+}) {
+  return [
+    {
+      id: sessionState.userId,
+      name: sessionState.displayName,
+      role: sessionState.role,
+    },
+  ]
+}
 
 export default function WhiteboardSessionPage() {
   const router = useRouter()
@@ -19,10 +37,42 @@ export default function WhiteboardSessionPage() {
     displayName: string
     sessionName: string
   }>(() => getStoredSession())
+  const [sessionDetails, setSessionDetails] = useState<SessionDetailsDto | null>(null)
 
   useEffect(() => {
     if (!sessionState || sessionState.sessionId !== params.sessionId) {
       router.replace("/sessions")
+    }
+  }, [params.sessionId, router, sessionState])
+
+  useEffect(() => {
+    if (!sessionState || sessionState.sessionId !== params.sessionId) {
+      return
+    }
+
+    let mounted = true
+
+    const loadSession = async () => {
+      try {
+        const details = await fetchSessionDetails(sessionState.sessionId)
+        if (mounted) {
+          setSessionDetails(details)
+        }
+      } catch {
+        if (mounted) {
+          router.replace("/sessions")
+        }
+      }
+    }
+
+    void loadSession()
+    const interval = window.setInterval(() => {
+      void loadSession()
+    }, 5000)
+
+    return () => {
+      mounted = false
+      window.clearInterval(interval)
     }
   }, [params.sessionId, router, sessionState])
 
@@ -36,24 +86,34 @@ export default function WhiteboardSessionPage() {
     )
   }
 
+  const activeUsers =
+    sessionDetails?.participants.length
+      ? sessionDetails.participants.map((participant) => ({
+          id: participant.id,
+          name: participant.name,
+          role: participant.role,
+        }))
+      : getFallbackActiveUsers(sessionState)
+  const currentUserRole =
+    sessionDetails?.participants.find(
+      (participant) => participant.id === sessionState.userId,
+    )?.role ?? sessionState.role
+  const sessionStartTime = sessionDetails
+    ? new Date(sessionDetails.startTime).getTime()
+    : loadedAt
+
   return (
     <ProtectedRoute>
       <SessionProvider
         initialState={{
           sessionId: sessionState.sessionId,
           userId: sessionState.userId,
-          sessionName: sessionState.sessionName,
-          role: sessionState.role,
+          sessionName: sessionDetails?.name ?? sessionState.sessionName,
+          role: currentUserRole,
           mode: "FREE",
           dominanceRatio: 0,
-          activeUsers: [
-            {
-              id: sessionState.userId,
-              name: sessionState.displayName,
-              role: sessionState.role,
-            },
-          ],
-          sessionStartTime: loadedAt,
+          activeUsers,
+          sessionStartTime,
           modeStartedAt: loadedAt,
         }}
       >

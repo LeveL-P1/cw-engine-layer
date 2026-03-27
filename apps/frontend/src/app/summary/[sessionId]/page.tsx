@@ -6,6 +6,10 @@ import { useEffect, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { getStoredSession } from "@/lib/session-storage"
 import { ProtectedRoute } from "@/components/ProtectedRoute"
+import {
+  fetchSessionDetails,
+  type SessionDetailsDto,
+} from "@/lib/session-api"
 
 type PerUser = {
   userId: string
@@ -45,6 +49,7 @@ export default function SessionSummaryPage() {
     displayName: string
     sessionName: string
   }>(() => getStoredSession())
+  const [sessionDetails, setSessionDetails] = useState<SessionDetailsDto | null>(null)
   const [metrics, setMetrics] = useState<Metrics | null>(null)
   const [modeBreakdown, setModeBreakdown] = useState<
     { mode: string; durationMinutes: number }[]
@@ -61,6 +66,19 @@ export default function SessionSummaryPage() {
     if (!sessionInfo || sessionInfo.sessionId !== params.sessionId) return
 
     let cancelled = false
+
+    const loadSession = async () => {
+      try {
+        const details = await fetchSessionDetails(sessionInfo.sessionId)
+        if (!cancelled) {
+          setSessionDetails(details)
+        }
+      } catch {
+        if (!cancelled) {
+          router.replace("/sessions")
+        }
+      }
+    }
 
     const loadMetrics = async () => {
       try {
@@ -102,14 +120,15 @@ export default function SessionSummaryPage() {
       }
     }
 
+    void loadSession()
     void loadMetrics()
 
     return () => {
       cancelled = true
     }
-  }, [params.sessionId, sessionInfo])
+  }, [params.sessionId, router, sessionInfo])
 
-  const sessionName = sessionInfo?.sessionName ?? "Whiteboard Session"
+  const sessionName = sessionDetails?.name ?? sessionInfo?.sessionName ?? "Whiteboard Session"
   const totalEdits = metrics?.totalEdits ?? 0
   const dominanceRatio = metrics?.dominanceRatio ?? 0
   const participants = metrics?.activeUsers ?? 1
@@ -138,22 +157,40 @@ export default function SessionSummaryPage() {
       {!sessionInfo || sessionInfo.sessionId !== params.sessionId || !metrics ? (
         <div className="p-6">Loading summary...</div>
       ) : (
+        (() => {
+          const activeUsers =
+            sessionDetails?.participants.length
+              ? sessionDetails.participants.map((participant) => ({
+                  id: participant.id,
+                  name: participant.name,
+                  role: participant.role,
+                }))
+              : [
+                  {
+                    id: sessionInfo.userId,
+                    name: sessionInfo.displayName,
+                    role: sessionInfo.role,
+                  },
+                ]
+          const currentUserRole =
+            sessionDetails?.participants.find(
+              (participant) => participant.id === sessionInfo.userId,
+            )?.role ?? sessionInfo.role
+          const sessionStartTime = sessionDetails
+            ? new Date(sessionDetails.startTime).getTime()
+            : loadedAt
+
+          return (
         <SessionProvider
           initialState={{
             sessionId: sessionInfo.sessionId,
             userId: sessionInfo.userId,
             sessionName,
-            role: sessionInfo.role,
+            role: currentUserRole,
             mode: "FREE",
             dominanceRatio,
-            activeUsers: [
-              {
-                id: sessionInfo.userId,
-                name: sessionInfo.displayName,
-                role: sessionInfo.role,
-              },
-            ],
-            sessionStartTime: loadedAt,
+            activeUsers,
+            sessionStartTime,
             modeStartedAt: loadedAt,
           }}
         >
@@ -214,6 +251,8 @@ export default function SessionSummaryPage() {
             </div>
           </AppShell>
         </SessionProvider>
+          )
+        })()
       )}
     </ProtectedRoute>
   )

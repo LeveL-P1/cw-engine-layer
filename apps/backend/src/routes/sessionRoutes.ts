@@ -49,7 +49,18 @@ router.get("/:sessionId", async (req, res) => {
       where: { id: sessionId },
       include: {
         participants: {
-          select: { id: true },
+          orderBy: { joinedAt: "asc" },
+          select: {
+            id: true,
+            userId: true,
+            role: true,
+            joinedAt: true,
+            user: {
+              select: {
+                name: true,
+              },
+            },
+          },
         },
       },
     })
@@ -65,6 +76,13 @@ router.get("/:sessionId", async (req, res) => {
       startTime: session.startTime,
       endTime: session.endTime,
       participantCount: session.participants.length,
+      participants: session.participants.map((participant) => ({
+        id: participant.userId,
+        participantId: participant.id,
+        name: participant.user.name,
+        role: participant.role,
+        joinedAt: participant.joinedAt,
+      })),
     })
   } catch {
     return res.status(500).json({ message: "Failed to load session" })
@@ -105,13 +123,12 @@ router.post("/:sessionId/join", async (req, res) => {
       update: {
         email: effectiveEmail,
         name,
-        role,
       },
       create: {
         id: effectiveUserId,
         email: effectiveEmail,
         name,
-        role,
+        role: "CONTRIBUTOR",
       },
     })
 

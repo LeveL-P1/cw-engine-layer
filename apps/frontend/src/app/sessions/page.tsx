@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation"
 import { ProtectedRoute } from "@/components/ProtectedRoute"
 import { useAuth } from "@/context/auth-context"
 import { setStoredSession } from "@/lib/session-storage"
+import { fetchSessionDetails } from "@/lib/session-api"
 import type { RoleType } from "@/context/session-context"
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000"
@@ -153,13 +154,7 @@ export default function SessionsPage() {
     try {
       const role: RoleType = "CONTRIBUTOR"
 
-      const sessionRes = await fetch(`${API_URL}/api/sessions/${sessionId}`)
-      if (!sessionRes.ok) {
-        const sessionError = await sessionRes.json().catch(() => null)
-        throw new Error(sessionError?.message ?? "Session not found")
-      }
-
-      const session = await sessionRes.json()
+      const session = await fetchSessionDetails(sessionId)
 
       const joinRes = await fetch(`${API_URL}/api/sessions/${sessionId}/join`, {
         method: "POST",

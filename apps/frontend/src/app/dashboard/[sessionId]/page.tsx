@@ -17,6 +17,10 @@ import { ActivityTimeline } from "@/components/analytics/ActivityTimeline"
 import type { ModeTransition } from "@/components/analytics/ActivityTimeline"
 import { getStoredSession } from "@/lib/session-storage"
 import { ProtectedRoute } from "@/components/ProtectedRoute"
+import {
+  fetchSessionDetails,
+  type SessionDetailsDto,
+} from "@/lib/session-api"
 
 type PerUser = {
   userId: string
@@ -64,6 +68,7 @@ export default function DashboardSessionPage() {
     displayName: string
     sessionName: string
   }>(() => getStoredSession())
+  const [sessionDetails, setSessionDetails] = useState<SessionDetailsDto | null>(null)
   const [timeline, setTimeline] = useState<TimelinePoint[]>([])
   const [modeTransitions, setModeTransitions] = useState<ModeTransition[]>([])
 
@@ -81,6 +86,19 @@ export default function DashboardSessionPage() {
     let mounted = true
 
     connectWebSocket(sessionInfo.sessionId, sessionInfo.userId)
+
+    const loadSession = async () => {
+      try {
+        const details = await fetchSessionDetails(sessionInfo.sessionId)
+        if (mounted) {
+          setSessionDetails(details)
+        }
+      } catch {
+        if (mounted) {
+          router.replace("/sessions")
+        }
+      }
+    }
 
     const loadMetrics = async () => {
       try {
@@ -171,12 +189,14 @@ export default function DashboardSessionPage() {
       }
     }
 
+    void loadSession()
     void loadMetrics()
     void loadMode()
     void loadTimeline()
     void loadModeTransitions()
 
     const interval = setInterval(() => {
+      void loadSession()
       void loadMetrics()
     }, 5000)
 
@@ -188,29 +208,47 @@ export default function DashboardSessionPage() {
       mounted = false
       clearInterval(interval)
     }
-  }, [params.sessionId, sessionInfo])
+  }, [params.sessionId, router, sessionInfo])
 
   return (
     <ProtectedRoute>
       {!sessionInfo || sessionInfo.sessionId !== params.sessionId || !metrics ? (
         <div className="p-6">Loading dashboard...</div>
       ) : (
+        (() => {
+          const activeUsers =
+            sessionDetails?.participants.length
+              ? sessionDetails.participants.map((participant) => ({
+                  id: participant.id,
+                  name: participant.name,
+                  role: participant.role,
+                }))
+              : [
+                  {
+                    id: sessionInfo.userId,
+                    name: sessionInfo.displayName,
+                    role: sessionInfo.role,
+                  },
+                ]
+          const currentUserRole =
+            sessionDetails?.participants.find(
+              (participant) => participant.id === sessionInfo.userId,
+            )?.role ?? sessionInfo.role
+          const sessionStartTime = sessionDetails
+            ? new Date(sessionDetails.startTime).getTime()
+            : loadedAt
+
+          return (
         <SessionProvider
           initialState={{
             sessionId: sessionInfo.sessionId,
             userId: sessionInfo.userId,
-            sessionName: sessionInfo.sessionName,
-            role: sessionInfo.role,
+            sessionName: sessionDetails?.name ?? sessionInfo.sessionName,
+            role: currentUserRole,
             mode: mode as "FREE" | "DECISION" | "LOCKED",
             dominanceRatio: metrics.dominanceRatio,
-            activeUsers: [
-              {
-                id: sessionInfo.userId,
-                name: sessionInfo.displayName,
-                role: sessionInfo.role,
-              },
-            ],
-            sessionStartTime: loadedAt,
+            activeUsers,
+            sessionStartTime,
             modeStartedAt: loadedAt,
           }}
         >
@@ -291,6 +329,8 @@ export default function DashboardSessionPage() {
             </div>
           </AppShell>
         </SessionProvider>
+          )
+        })()
       )}
     </ProtectedRoute>
   )
