@@ -6,13 +6,6 @@ export async function createSnapshot(sessionId: string) {
   const metrics = getSessionMetrics(sessionId)
   if (!metrics) return
 
-  // Ensure session exists in DB before writing snapshot
-  await prisma.session.upsert({
-    where: { id: sessionId },
-    update: {},
-    create: { id: sessionId, currentMode: getMode(sessionId) }
-  })
-
   const total = metrics.totalEdits
   const userCounts = Array.from(metrics.userEdits.values())
 
@@ -26,7 +19,7 @@ export async function createSnapshot(sessionId: string) {
       activeUsers: metrics.userEdits.size,
       dominanceRatio,
       mode: getMode(sessionId),
-      timestamp: new Date()
-    }
+      timestamp: new Date(),
+    },
   })
 }

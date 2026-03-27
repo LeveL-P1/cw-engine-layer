@@ -41,12 +41,12 @@ export async function handleMessage(ws: WebSocket, data: any) {
         return
       }
 
-      await publishEvent({
+      void publishEvent({
         type: "CANVAS_EVENT",
         sessionId: data.sessionId,
         userId: data.userId,
         payload: data.payload,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       })
 
       broadcast(data.sessionId, data)
