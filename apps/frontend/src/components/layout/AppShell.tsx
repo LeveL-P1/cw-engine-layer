@@ -3,7 +3,6 @@
 import { ReactNode } from "react"
 import { Sidebar } from "../layout/Sidebar"
 import { Topbar } from "../layout/Topbar"
-import { ModeControlPanel } from "../governance/ModeControlPanel"
 
 interface AppShellProps {
   children: ReactNode
@@ -21,10 +20,6 @@ export function AppShell({ children }: AppShellProps) {
           {children}
         </main>
       </div>
-
-      <aside className="w-64 bg-zinc-900 border-l border-zinc-800 p-6">
-        <ModeControlPanel />
-      </aside>
     </div>
   )
 }
