@@ -21,6 +21,7 @@ import {
   fetchSessionDetails,
   type SessionDetailsDto,
 } from "@/lib/session-api"
+import { apiFetch } from "@/lib/api"
 
 type PerUser = {
   userId: string
@@ -103,7 +104,7 @@ export default function DashboardSessionPage() {
 
     const loadMetrics = async () => {
       try {
-        const res = await fetch(`${API_URL}/api/metrics/${sessionInfo.sessionId}`)
+        const res = await apiFetch(`${API_URL}/api/metrics/${sessionInfo.sessionId}`)
 
         if (res.status === 404) {
           if (mounted) {
@@ -129,7 +130,7 @@ export default function DashboardSessionPage() {
 
     const loadMode = async () => {
       try {
-        const res = await fetch(`${API_URL}/api/mode/${sessionInfo.sessionId}`)
+        const res = await apiFetch(`${API_URL}/api/mode/${sessionInfo.sessionId}`)
         if (!res.ok) return
 
         const data = await res.json()
@@ -143,7 +144,7 @@ export default function DashboardSessionPage() {
 
     const loadTimeline = async () => {
       try {
-        const res = await fetch(
+        const res = await apiFetch(
           `${API_URL}/api/metrics/${sessionInfo.sessionId}/timeline`,
         )
 
@@ -162,7 +163,7 @@ export default function DashboardSessionPage() {
 
     const loadModeTransitions = async () => {
       try {
-        const res = await fetch(
+        const res = await apiFetch(
           `${API_URL}/api/metrics/${sessionInfo.sessionId}/mode-transitions`,
         )
 
@@ -265,14 +266,13 @@ export default function DashboardSessionPage() {
                     onClick={async () => {
                       const newMode = mode === "FREE" ? "LOCKED" : "FREE"
 
-                      await fetch(`${API_URL}/api/mode/${sessionInfo.sessionId}`, {
+                      await apiFetch(`${API_URL}/api/mode/${sessionInfo.sessionId}`, {
                         method: "POST",
                         headers: {
                           "Content-Type": "application/json",
                         },
                         body: JSON.stringify({
                           mode: newMode,
-                          userId: sessionInfo.userId,
                         }),
                       })
                     }}

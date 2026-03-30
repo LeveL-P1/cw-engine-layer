@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { useSession, ModeType } from "@/context/session-context"
+import { apiFetch } from "@/lib/api"
 
 const modes: ModeType[] = ["FREE", "DECISION", "LOCKED"]
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000"
@@ -28,12 +29,11 @@ export function ModeControlPanel() {
     try {
       setLoading(true)
 
-      await fetch(`${API_URL}/api/mode/${sessionId}`, {
+      await apiFetch(`${API_URL}/api/mode/${sessionId}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           mode: newMode,
-          userId: facilitator.id,
         }),
       })
 

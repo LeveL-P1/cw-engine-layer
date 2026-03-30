@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation"
 import { ProtectedRoute } from "@/components/ProtectedRoute"
 import { useAuth } from "@/context/auth-context"
 import { setStoredSession } from "@/lib/session-storage"
-import { fetchSessionDetails } from "@/lib/session-api"
+import { apiFetch } from "@/lib/api"
 import type { RoleType } from "@/context/session-context"
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000"
@@ -78,7 +78,7 @@ export default function SessionsPage() {
     try {
       const role: RoleType = "FACILITATOR"
 
-      const createRes = await fetch(`${API_URL}/api/sessions`, {
+      const createRes = await apiFetch(`${API_URL}/api/sessions`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -92,14 +92,12 @@ export default function SessionsPage() {
 
       const created = await createRes.json()
 
-      const joinRes = await fetch(`${API_URL}/api/sessions/${created.id}/join`, {
+      const joinRes = await apiFetch(`${API_URL}/api/sessions/${created.id}/join`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          userId: user.id,
-          email: user.email,
           name: resolvedDisplayName,
           role,
         }),
@@ -110,12 +108,14 @@ export default function SessionsPage() {
         throw new Error(joinError?.message ?? "Failed to join session")
       }
 
+      const joinPayload = await joinRes.json()
+
       setStoredSession({
         sessionId: created.id,
         userId: user.id,
-        role,
+        role: joinPayload.role ?? role,
         displayName: resolvedDisplayName,
-        sessionName: created.name ?? resolvedSessionName,
+        sessionName: joinPayload.sessionName ?? created.name ?? resolvedSessionName,
       })
 
       router.push(`/whiteboard/${created.id}`)
@@ -154,16 +154,12 @@ export default function SessionsPage() {
     try {
       const role: RoleType = "CONTRIBUTOR"
 
-      const session = await fetchSessionDetails(sessionId)
-
-      const joinRes = await fetch(`${API_URL}/api/sessions/${sessionId}/join`, {
+      const joinRes = await apiFetch(`${API_URL}/api/sessions/${sessionId}/join`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          userId: user.id,
-          email: user.email,
           name: resolvedDisplayName,
           role,
         }),
@@ -174,12 +170,14 @@ export default function SessionsPage() {
         throw new Error(joinError?.message ?? "Failed to join session")
       }
 
+      const joinPayload = await joinRes.json()
+
       setStoredSession({
         sessionId,
         userId: user.id,
-        role,
+        role: joinPayload.role ?? role,
         displayName: resolvedDisplayName,
-        sessionName: session.name ?? DEFAULT_SESSION_NAME,
+        sessionName: joinPayload.sessionName ?? DEFAULT_SESSION_NAME,
       })
 
       router.push(`/whiteboard/${sessionId}`)

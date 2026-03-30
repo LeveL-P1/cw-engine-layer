@@ -10,6 +10,7 @@ import {
   fetchSessionDetails,
   type SessionDetailsDto,
 } from "@/lib/session-api"
+import { apiFetch } from "@/lib/api"
 
 type PerUser = {
   userId: string
@@ -82,7 +83,7 @@ export default function SessionSummaryPage() {
 
     const loadMetrics = async () => {
       try {
-        const res = await fetch(`${API_URL}/api/metrics/${sessionInfo.sessionId}`)
+        const res = await apiFetch(`${API_URL}/api/metrics/${sessionInfo.sessionId}`)
 
         if (res.status === 404) {
           if (!cancelled) {
@@ -100,7 +101,7 @@ export default function SessionSummaryPage() {
 
         setMetrics(data.data)
 
-        const transitionsRes = await fetch(
+        const transitionsRes = await apiFetch(
           `${API_URL}/api/metrics/${sessionInfo.sessionId}/mode-transitions`,
         )
 

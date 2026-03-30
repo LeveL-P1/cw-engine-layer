@@ -8,6 +8,17 @@ function requireEnv(name: string): string {
   return value
 }
 
+function requireOneOfEnv(...names: string[]): string {
+  for (const name of names) {
+    const value = process.env[name]?.trim()
+    if (value) {
+      return value
+    }
+  }
+
+  throw new Error(`${names.join(" or ")} is required`)
+}
+
 function requirePostgresUrl(name: string): string {
   const value = requireEnv(name)
 
@@ -45,6 +56,11 @@ export const env = {
   directUrl: process.env.DIRECT_URL?.trim()
     ? requirePostgresUrl("DIRECT_URL")
     : null,
+  supabaseUrl: requireOneOfEnv("SUPABASE_URL", "NEXT_PUBLIC_SUPABASE_URL"),
+  supabasePublishableKey: requireOneOfEnv(
+    "SUPABASE_PUBLISHABLE_KEY",
+    "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY",
+  ),
   port: parsePort(process.env.PORT),
   corsOrigin: process.env.CORS_ORIGIN?.trim() || "http://localhost:3000",
 }

@@ -1,4 +1,5 @@
 import type { ModeType, RoleType } from "@/context/session-context"
+import { apiFetch } from "@/lib/api"
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000"
 
@@ -23,7 +24,7 @@ export interface SessionDetailsDto {
 export async function fetchSessionDetails(
   sessionId: string,
 ): Promise<SessionDetailsDto> {
-  const response = await fetch(`${API_URL}/api/sessions/${sessionId}`)
+  const response = await apiFetch(`${API_URL}/api/sessions/${sessionId}`)
 
   if (!response.ok) {
     const errorPayload = await response.json().catch(() => null)

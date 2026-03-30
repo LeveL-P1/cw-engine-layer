@@ -7,6 +7,7 @@ import { useEffect, useState } from "react"
 import { setCanvasEventHandler } from "@/lib/websocket"
 import { handleCanvasChange } from "./CanvasAdapter"
 import { useSession, type ModeType } from "@/context/session-context"
+import { apiFetch } from "@/lib/api"
 
 interface Props {
   sessionId: string
@@ -23,7 +24,7 @@ export default function Whiteboard({ sessionId, userId }: Props) {
   // Sync the actual session mode from the backend once on mount.
   // SessionProvider keeps it live via WS after this.
   useEffect(() => {
-    fetch(`${API_URL}/api/mode/${sessionId}`)
+    apiFetch(`${API_URL}/api/mode/${sessionId}`)
       .then((res) => res.json())
       .then((data) => {
         if (data.mode) setMode(data.mode as ModeType)

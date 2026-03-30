@@ -8,12 +8,28 @@ import {
   setMode,
 } from "../governance/governanceEngine"
 import { broadcast } from "../websocket/connectionManager"
-import type { Request } from "express"
+import { isSessionParticipant } from "../middleware/sessionAccess"
 
 const router = Router()
 
+async function ensureParticipantAccess(
+  sessionId: string,
+  userId: string | undefined,
+) {
+  if (!userId) {
+    return false
+  }
+
+  return isSessionParticipant(sessionId, userId)
+}
+
 router.get("/metrics/:sessionId", async (req, res) => {
   const { sessionId } = req.params
+  const userId = req.user?.sub
+
+  if (!(await ensureParticipantAccess(sessionId, userId))) {
+    return res.status(403).json({ message: "You do not have access to this session" })
+  }
 
   // Try DB snapshot first
   const latestSnapshot = await prisma.metricsSnapshot.findFirst({
@@ -75,6 +91,11 @@ router.get("/metrics/:sessionId", async (req, res) => {
 
 router.get("/metrics/:sessionId/timeline", async (req, res) => {
   const { sessionId } = req.params
+  const userId = req.user?.sub
+
+  if (!(await ensureParticipantAccess(sessionId, userId))) {
+    return res.status(403).json({ message: "You do not have access to this session" })
+  }
 
   const events = await prisma.eventLog.findMany({
     where: { sessionId },
@@ -107,6 +128,11 @@ router.get("/metrics/:sessionId/timeline", async (req, res) => {
 
 router.get("/metrics/:sessionId/mode-transitions", async (req, res) => {
   const { sessionId } = req.params
+  const userId = req.user?.sub
+
+  if (!(await ensureParticipantAccess(sessionId, userId))) {
+    return res.status(403).json({ message: "You do not have access to this session" })
+  }
 
   const snapshots = await prisma.metricsSnapshot.findMany({
     where: { sessionId },
@@ -138,6 +164,12 @@ router.get("/metrics/:sessionId/mode-transitions", async (req, res) => {
 
 router.get("/mode/:sessionId", async (req, res) => {
   const { sessionId } = req.params
+  const userId = req.user?.sub
+
+  if (!(await ensureParticipantAccess(sessionId, userId))) {
+    return res.status(403).json({ message: "You do not have access to this session" })
+  }
+
   try {
     const mode = await getMode(sessionId)
     res.json({ mode })
@@ -149,17 +181,20 @@ router.get("/mode/:sessionId", async (req, res) => {
 
 router.post("/mode/:sessionId", async (req, res) => {
   const { sessionId } = req.params
-  const { mode, userId } = req.body
-  const user = (req as Request & { user?: { sub: string } }).user
+  const { mode } = req.body
 
   if (!["FREE", "LOCKED", "DECISION"].includes(mode)) {
     return res.status(400).json({ message: "Invalid mode" })
   }
 
-  const effectiveUserId = user?.sub ?? userId
+  const effectiveUserId = req.user?.sub
 
   if (!effectiveUserId) {
-    return res.status(400).json({ message: "userId is required" })
+    return res.status(401).json({ message: "Authenticated user is required" })
+  }
+
+  if (!(await ensureParticipantAccess(sessionId, effectiveUserId))) {
+    return res.status(403).json({ message: "You do not have access to this session" })
   }
 
   await hydrateSessionState(sessionId)
