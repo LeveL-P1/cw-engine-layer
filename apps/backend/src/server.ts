@@ -12,6 +12,7 @@ import sessionRoutes from "./routes/sessionRoutes"
 import cors from "cors"
 import { prisma } from "./lib/prisma"
 import { env } from "./lib/env"
+import { requireAuth } from "./middleware/auth"
 
 
 const app = express()
@@ -30,8 +31,8 @@ app.use(cors({
 
 app.use(express.json())
 
-app.use("/api", analyticsRoutes)
-app.use("/api/sessions", sessionRoutes)
+app.use("/api", requireAuth, analyticsRoutes)
+app.use("/api/sessions", requireAuth, sessionRoutes)
 
 setInterval(async () => {
   const sessionIds = getAllSessionIds()

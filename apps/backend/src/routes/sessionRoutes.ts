@@ -1,23 +1,8 @@
-import { Router, type Request } from "express"
+import { Router } from "express"
 import { prisma } from "../lib/prisma"
+import { isSessionParticipant } from "../middleware/sessionAccess"
 
 const router = Router()
-
-type JoinRequest = Request<
-  { sessionId: string },
-  unknown,
-  {
-    userId?: string
-    email?: string
-    name?: string
-    role?: string
-  }
-> & {
-  user?: {
-    sub: string
-    email?: string
-  }
-}
 
 router.post("/", async (req, res) => {
   const { name } = req.body ?? {}
@@ -43,6 +28,11 @@ router.post("/", async (req, res) => {
 
 router.get("/:sessionId", async (req, res) => {
   const { sessionId } = req.params
+  const userId = req.user?.sub
+
+  if (!userId || !(await isSessionParticipant(sessionId, userId))) {
+    return res.status(403).json({ message: "You do not have access to this session" })
+  }
 
   try {
     const session = await prisma.session.findUnique({
@@ -90,33 +80,49 @@ router.get("/:sessionId", async (req, res) => {
 })
 
 router.post("/:sessionId/join", async (req, res) => {
-  const request = req as JoinRequest
   const { sessionId } = req.params
-  const { user } = request
-
-  const { userId, email, name, role } = request.body ?? {}
-
-  const effectiveUserId = user?.sub ?? userId
-  const effectiveEmail = user?.email ?? email
+  const { name } = req.body ?? {}
+  const effectiveUserId = req.user?.sub
+  const effectiveEmail = req.user?.email
 
   try {
+    if (!effectiveUserId) {
+      return res.status(401).json({ message: "Authenticated user is required" })
+    }
+
     const session = await prisma.session.findUnique({
       where: { id: sessionId },
+      include: {
+        participants: {
+          where: {
+            userId: effectiveUserId,
+          },
+          select: {
+            role: true,
+          },
+        },
+        _count: {
+          select: {
+            participants: true,
+          },
+        },
+      },
     })
 
     if (!session) {
       return res.status(404).json({ message: "Session not found" })
     }
 
-    if (!effectiveUserId) {
-      return res.status(400).json({ message: "userId is required" })
-    }
-
-    if (!name || !role || !effectiveEmail) {
+    if (!name || !effectiveEmail) {
       return res.status(400).json({
-        message: "email, name, and role are required",
+        message: "Authenticated email and display name are required",
       })
     }
+
+    const existingRole = session.participants[0]?.role
+    const effectiveRole =
+      existingRole ??
+      (session._count.participants === 0 ? "FACILITATOR" : "CONTRIBUTOR")
 
     await prisma.user.upsert({
       where: { id: effectiveUserId },
@@ -140,12 +146,12 @@ router.post("/:sessionId/join", async (req, res) => {
         },
       },
       update: {
-        role,
+        role: effectiveRole,
       },
       create: {
         sessionId,
         userId: effectiveUserId,
-        role,
+        role: effectiveRole,
       },
     })
 
@@ -153,7 +159,10 @@ router.post("/:sessionId/join", async (req, res) => {
       id: participant.id,
       sessionId: participant.sessionId,
       userId: participant.userId,
-      role: participant.role,
+      sessionName: session.name,
+      currentMode: session.currentMode,
+      startTime: session.startTime,
+      role: effectiveRole,
       joinedAt: participant.joinedAt,
     })
   } catch {
