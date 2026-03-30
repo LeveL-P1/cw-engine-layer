@@ -1,4 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { getAccessToken } from "@/lib/api"
+
 let socket: WebSocket | null = null
 let modeHandler: ((mode: string) => void) | null = null
 let canvasEventHandler: ((payload: any) => void) | null = null
@@ -37,7 +39,18 @@ export function connectWebSocket(sessionId: string, userId: string) {
   connectedUserId = userId
 
   socket.onopen = () => {
-    socket?.send(JSON.stringify({ type: "JOIN_SESSION", sessionId, userId }))
+    void getAccessToken()
+      .then((token) => {
+        if (!token) {
+          socket?.close()
+          return
+        }
+
+        socket?.send(JSON.stringify({ type: "JOIN_SESSION", sessionId, token }))
+      })
+      .catch(() => {
+        socket?.close()
+      })
   }
 
   socket.onmessage = (event) => {
