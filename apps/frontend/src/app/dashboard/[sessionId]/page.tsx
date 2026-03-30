@@ -92,6 +92,7 @@ export default function DashboardSessionPage() {
         const details = await fetchSessionDetails(sessionInfo.sessionId)
         if (mounted) {
           setSessionDetails(details)
+          setMode(details.currentMode)
         }
       } catch {
         if (mounted) {
@@ -245,7 +246,7 @@ export default function DashboardSessionPage() {
             userId: sessionInfo.userId,
             sessionName: sessionDetails?.name ?? sessionInfo.sessionName,
             role: currentUserRole,
-            mode: mode as "FREE" | "DECISION" | "LOCKED",
+            mode: sessionDetails?.currentMode ?? (mode as "FREE" | "DECISION" | "LOCKED"),
             dominanceRatio: metrics.dominanceRatio,
             activeUsers,
             sessionStartTime,

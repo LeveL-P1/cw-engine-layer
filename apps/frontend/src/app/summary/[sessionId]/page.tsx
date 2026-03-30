@@ -187,7 +187,7 @@ export default function SessionSummaryPage() {
             userId: sessionInfo.userId,
             sessionName,
             role: currentUserRole,
-            mode: "FREE",
+            mode: sessionDetails?.currentMode ?? "FREE",
             dominanceRatio,
             activeUsers,
             sessionStartTime,

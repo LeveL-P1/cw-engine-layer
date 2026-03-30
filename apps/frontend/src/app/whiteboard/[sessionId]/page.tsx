@@ -110,7 +110,7 @@ export default function WhiteboardSessionPage() {
           userId: sessionState.userId,
           sessionName: sessionDetails?.name ?? sessionState.sessionName,
           role: currentUserRole,
-          mode: "FREE",
+          mode: sessionDetails?.currentMode ?? "FREE",
           dominanceRatio: 0,
           activeUsers,
           sessionStartTime,

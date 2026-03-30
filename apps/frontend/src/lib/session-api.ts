@@ -1,4 +1,4 @@
-import type { RoleType } from "@/context/session-context"
+import type { ModeType, RoleType } from "@/context/session-context"
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000"
 
@@ -13,7 +13,7 @@ export interface SessionParticipantDto {
 export interface SessionDetailsDto {
   id: string
   name: string | null
-  currentMode: string
+  currentMode: ModeType
   startTime: string
   endTime: string | null
   participantCount: number
