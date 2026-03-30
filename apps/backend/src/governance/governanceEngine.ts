@@ -14,69 +14,147 @@ function ensureSession(sessionId: string) {
   if (!sessions.has(sessionId)) {
     sessions.set(sessionId, {
       mode: "FREE",
-      roles: new Map()
+      roles: new Map(),
     })
   }
+
+  return sessions.get(sessionId)!
 }
 
-export function assignRole(
+function isMode(value: string | null | undefined): value is Mode {
+  return value === "FREE" || value === "LOCKED" || value === "DECISION"
+}
+
+function isRole(value: string | null | undefined): value is Role {
+  return (
+    value === "FACILITATOR" ||
+    value === "CONTRIBUTOR" ||
+    value === "OBSERVER"
+  )
+}
+
+export async function hydrateSessionState(sessionId: string) {
+  const session = await prisma.session.findUnique({
+    where: { id: sessionId },
+    select: {
+      currentMode: true,
+      participants: {
+        select: {
+          userId: true,
+          role: true,
+        },
+      },
+    },
+  })
+
+  if (!session) {
+    return null
+  }
+
+  const state = ensureSession(sessionId)
+  state.mode = isMode(session.currentMode) ? session.currentMode : "FREE"
+  const persistedRoles: Array<[string, Role]> = []
+
+  for (const participant of session.participants) {
+    if (isRole(participant.role)) {
+      persistedRoles.push([participant.userId, participant.role])
+    }
+  }
+
+  state.roles = new Map(persistedRoles)
+
+  return state
+}
+
+export function assignRole(sessionId: string, userId: string, role: Role) {
+  const state = ensureSession(sessionId)
+  state.roles.set(userId, role)
+}
+
+export function getRole(sessionId: string, userId: string): Role {
+  const state = ensureSession(sessionId)
+  return state.roles.get(userId) || "CONTRIBUTOR"
+}
+
+export async function getPersistedRole(
   sessionId: string,
   userId: string,
-  role: Role
-) {
-  ensureSession(sessionId)
-  sessions.get(sessionId)!.roles.set(userId, role)
-}
+): Promise<Role | null> {
+  const participant = await prisma.sessionParticipant.findUnique({
+    where: {
+      sessionId_userId: {
+        sessionId,
+        userId,
+      },
+    },
+    select: {
+      role: true,
+    },
+  })
 
-export function getRole(
-  sessionId: string,
-  userId: string
-): Role {
-  ensureSession(sessionId)
-  return sessions.get(sessionId)!.roles.get(userId) || "CONTRIBUTOR"
+  if (!participant || !isRole(participant.role)) {
+    return null
+  }
+
+  assignRole(sessionId, userId, participant.role)
+  return participant.role
 }
 
 export function hasFacilitator(sessionId: string): boolean {
-  ensureSession(sessionId)
-  const roles = sessions.get(sessionId)!.roles
-  return Array.from(roles.values()).includes("FACILITATOR")
+  const state = ensureSession(sessionId)
+  return Array.from(state.roles.values()).includes("FACILITATOR")
 }
 
 export async function setMode(sessionId: string, mode: Mode) {
-  ensureSession(sessionId)
-  sessions.get(sessionId)!.mode = mode
+  const state = ensureSession(sessionId)
+  state.mode = mode
 
-  // Sync to DB
-  await prisma.session.update({
-    where: { id: sessionId },
-    data: { currentMode: mode }
-  }).catch(() => {}) // Session may not exist in DB yet
+  await prisma.session
+    .update({
+      where: { id: sessionId },
+      data: { currentMode: mode },
+    })
+    .catch(() => {})
 }
 
-export function getMode(sessionId: string): Mode {
-  ensureSession(sessionId)
-  return sessions.get(sessionId)!.mode
+export async function getMode(sessionId: string): Promise<Mode> {
+  const state = ensureSession(sessionId)
+
+  if (state.roles.size === 0 && state.mode === "FREE") {
+    await hydrateSessionState(sessionId)
+  }
+
+  return ensureSession(sessionId).mode
 }
 
-export function validateAction(
+export async function validateAction(
   sessionId: string,
-  userId: string
-): boolean {
-  ensureSession(sessionId)
+  userId: string,
+): Promise<boolean> {
+  const state =
+    sessions.has(sessionId) && ensureSession(sessionId).roles.size > 0
+      ? ensureSession(sessionId)
+      : await hydrateSessionState(sessionId)
 
-  const session = sessions.get(sessionId)!
-  const role = getRole(sessionId, userId)
-
-  // Observer never edits
-  if (role === "OBSERVER") return false
-
-  // Locked mode → only facilitator edits
-  if (session.mode === "LOCKED" && role !== "FACILITATOR") {
+  if (!state) {
     return false
   }
 
-  // Decision mode → no drawing allowed
-  if (session.mode === "DECISION") {
+  const role = state.roles.get(userId) ?? (await getPersistedRole(sessionId, userId))
+
+  if (!role) {
+    return false
+  }
+
+  if (role === "OBSERVER") {
+    return false
+  }
+
+  if (state.mode === "LOCKED" && role !== "FACILITATOR") {
+    return false
+  }
+
+  if (state.mode === "DECISION") {
     return false
   }
 

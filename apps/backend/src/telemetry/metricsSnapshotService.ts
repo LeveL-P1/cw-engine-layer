@@ -5,6 +5,7 @@ import { getSessionMetrics } from "./telemetryEngine"
 export async function createSnapshot(sessionId: string) {
   const metrics = getSessionMetrics(sessionId)
   if (!metrics) return
+  const mode = await getMode(sessionId)
 
   const total = metrics.totalEdits
   const userCounts = Array.from(metrics.userEdits.values())
@@ -18,7 +19,7 @@ export async function createSnapshot(sessionId: string) {
       totalEdits: total,
       activeUsers: metrics.userEdits.size,
       dominanceRatio,
-      mode: getMode(sessionId),
+      mode,
       timestamp: new Date(),
     },
   })

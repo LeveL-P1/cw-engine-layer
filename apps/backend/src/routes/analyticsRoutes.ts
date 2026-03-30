@@ -1,9 +1,13 @@
 import { Router } from "express"
 import { prisma } from "../lib/prisma"
 import { getSessionMetrics } from "../telemetry/telemetryEngine"
-import { setMode, getMode } from "../governance/governanceEngine"
+import {
+  getMode,
+  getPersistedRole,
+  hydrateSessionState,
+  setMode,
+} from "../governance/governanceEngine"
 import { broadcast } from "../websocket/connectionManager"
-import { getRole } from "../governance/governanceEngine"
 import type { Request } from "express"
 
 const router = Router()
@@ -132,10 +136,14 @@ router.get("/metrics/:sessionId/mode-transitions", async (req, res) => {
   return res.json({ data: transitions })
 })
 
-router.get("/mode/:sessionId", (req, res) => {
+router.get("/mode/:sessionId", async (req, res) => {
   const { sessionId } = req.params
-  const mode = getMode(sessionId)
-  res.json({ mode })
+  try {
+    const mode = await getMode(sessionId)
+    res.json({ mode })
+  } catch {
+    res.status(500).json({ message: "Failed to load mode" })
+  }
 })
 
 
@@ -154,7 +162,8 @@ router.post("/mode/:sessionId", async (req, res) => {
     return res.status(400).json({ message: "userId is required" })
   }
 
-  const role = getRole(sessionId, effectiveUserId)
+  await hydrateSessionState(sessionId)
+  const role = await getPersistedRole(sessionId, effectiveUserId)
 
   if (role !== "FACILITATOR") {
     return res.status(403).json({ message: "Only facilitator can change mode" })

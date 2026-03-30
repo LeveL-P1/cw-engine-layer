@@ -1,8 +1,12 @@
 import { WebSocket } from "ws"
 import { joinSession, broadcast } from "./connectionManager"
 import { publishEvent } from "../event-bus/eventBus"
-import { validateAction } from "../governance/governanceEngine"
-import { assignRole, hasFacilitator } from "../governance/governanceEngine"
+import {
+  getMode,
+  getPersistedRole,
+  hydrateSessionState,
+  validateAction,
+} from "../governance/governanceEngine"
 
 export async function handleMessage(ws: WebSocket, data: any) {
   if (!data || !data.type) {
@@ -18,14 +22,29 @@ export async function handleMessage(ws: WebSocket, data: any) {
         return
       }
 
+      await hydrateSessionState(data.sessionId)
+      const persistedRole = await getPersistedRole(data.sessionId, data.userId)
+
+      if (!persistedRole) {
+        ws.send(
+          JSON.stringify({
+            type: "ERROR",
+            message: "User is not a participant in this session",
+          }),
+        )
+        return
+      }
+
       joinSession(data.userId, data.sessionId, ws)
 
-      // First user becomes facilitator, others become contributors
-      if (!hasFacilitator(data.sessionId)) {
-        assignRole(data.sessionId, data.userId, "FACILITATOR")
-      } else {
-        assignRole(data.sessionId, data.userId, "CONTRIBUTOR")
-      }
+      ws.send(
+        JSON.stringify({
+          type: "SESSION_STATE",
+          sessionId: data.sessionId,
+          role: persistedRole,
+          mode: await getMode(data.sessionId),
+        }),
+      )
 
       break
 
@@ -35,7 +54,7 @@ export async function handleMessage(ws: WebSocket, data: any) {
         return
       }
 
-      const allowed = validateAction(data.sessionId, data.userId)
+      const allowed = await validateAction(data.sessionId, data.userId)
 
       if (!allowed) {
         return
