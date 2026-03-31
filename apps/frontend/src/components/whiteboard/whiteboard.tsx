@@ -46,7 +46,9 @@ export default function Whiteboard({ sessionId, userId }: Props) {
         const toPut = [
           ...Object.values(added ?? {}),
           // updated is Record<id, [fromRecord, toRecord]> — we only need "to"
-          ...Object.values(updated ?? {}).map(([, to]: [any, any]) => to),
+          ...((Object.values(updated ?? {}) as Array<[unknown, unknown]>).map(
+            (entry) => entry[1],
+          )),
         ]
         const toRemove = Object.keys(removed ?? {})
 

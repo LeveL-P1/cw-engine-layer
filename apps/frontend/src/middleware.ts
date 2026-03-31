@@ -15,7 +15,7 @@ export async function middleware(request: NextRequest) {
           return request.cookies.getAll()
         },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) => request.cookies.set(name, value, options))
+          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
           supabaseResponse = NextResponse.next({
             request,
           })
@@ -36,29 +36,25 @@ export async function middleware(request: NextRequest) {
   } = await supabase.auth.getUser()
 
   const pathname = request.nextUrl.pathname
-  const isAuthEntryRoute =
-    pathname === '/auth' ||
-    pathname === '/auth/login' ||
-    pathname === '/auth/signup'
+  const isRootRoute = pathname === "/"
+  const isAuthRoute =
+    pathname === "/auth" ||
+    pathname === "/auth/login" ||
+    pathname === "/auth/signup" ||
+    pathname === "/auth/forgot-password" ||
+    pathname === "/auth/reset-password" ||
+    pathname === "/auth/verify-email"
+  const isPublicRoute = isRootRoute || isAuthRoute
 
-  if (user && isAuthEntryRoute) {
+  if (user && (isAuthRoute || isRootRoute)) {
     const url = request.nextUrl.clone()
-    url.pathname = '/sessions'
+    url.pathname = "/sessions"
     return NextResponse.redirect(url)
   }
 
-  if (
-    !user &&
-    !pathname.startsWith('/auth') &&
-    !pathname.startsWith('/auth/login') &&
-    !pathname.startsWith('/auth/signup') &&
-    !pathname.startsWith('/auth/forgot-password') &&
-    !pathname.startsWith('/auth/reset-password') &&
-    !pathname.startsWith('/auth/verify-email')
-  ) {
-    // no user, potentially respond by redirecting the user to the login page
+  if (!user && !isPublicRoute) {
     const url = request.nextUrl.clone()
-    url.pathname = '/auth'
+    url.pathname = "/auth"
     return NextResponse.redirect(url)
   }
 

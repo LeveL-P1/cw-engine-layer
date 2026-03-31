@@ -3,8 +3,9 @@ import { AuthProvider } from "@/context/auth-context"
 import "./globals.css"
 
 export const metadata: Metadata = {
-  title: "Whiteboard App",
-  description: "Collaborative Whiteboard for Real-time Co-creation"
+  title: "CW-Engine Governed Whiteboard",
+  description:
+    "Governed collaborative whiteboard with realtime facilitation controls and analytics.",
 }
 
 export default function RootLayout({
@@ -14,7 +15,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className="bg-white text-gray-900 dark:bg-gray-900 dark:text-gray-100 transition-colors">
+      <body className="bg-background text-foreground transition-colors">
         <AuthProvider>
           {children}
         </AuthProvider>

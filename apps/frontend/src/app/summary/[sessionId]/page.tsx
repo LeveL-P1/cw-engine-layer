@@ -8,21 +8,9 @@ import { getStoredSession } from "@/lib/session-storage"
 import { ProtectedRoute } from "@/components/ProtectedRoute"
 import {
   fetchSessionDetails,
-  type SessionDetailsDto,
 } from "@/lib/session-api"
 import { apiFetch } from "@/lib/api"
-
-type PerUser = {
-  userId: string
-  edits: number
-}
-
-type Metrics = {
-  totalEdits: number
-  activeUsers: number
-  dominanceRatio: number
-  perUser: PerUser[]
-}
+import type { SessionDetails, SessionMetrics } from "@/types/session"
 
 type TransitionDto = {
   timestamp: string
@@ -31,7 +19,7 @@ type TransitionDto = {
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000"
 
-function emptyMetrics(): Metrics {
+function emptyMetrics(): SessionMetrics {
   return {
     totalEdits: 0,
     activeUsers: 1,
@@ -50,8 +38,8 @@ export default function SessionSummaryPage() {
     displayName: string
     sessionName: string
   }>(() => getStoredSession())
-  const [sessionDetails, setSessionDetails] = useState<SessionDetailsDto | null>(null)
-  const [metrics, setMetrics] = useState<Metrics | null>(null)
+  const [sessionDetails, setSessionDetails] = useState<SessionDetails | null>(null)
+  const [metrics, setMetrics] = useState<SessionMetrics | null>(null)
   const [modeBreakdown, setModeBreakdown] = useState<
     { mode: string; durationMinutes: number }[]
   >([])

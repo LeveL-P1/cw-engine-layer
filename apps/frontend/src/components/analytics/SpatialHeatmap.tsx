@@ -42,7 +42,10 @@ export function SpatialHeatmap({ data }: Props) {
 
           <Tooltip
             cursor={{ strokeDasharray: "3 3" }}
-            formatter={(value: number) => [`${value} edits`, "Intensity"]}
+            formatter={(value: number | undefined) => [
+              `${value ?? 0} edits`,
+              "Intensity",
+            ]}
           />
 
           <Scatter

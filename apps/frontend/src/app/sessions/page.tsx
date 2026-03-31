@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation"
 import { ProtectedRoute } from "@/components/ProtectedRoute"
 import { useAuth } from "@/context/auth-context"
 import { setStoredSession } from "@/lib/session-storage"
-import { apiFetch } from "@/lib/api"
+import { apiFetch, getApiErrorMessage } from "@/lib/api"
 import type { RoleType } from "@/context/session-context"
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000"
@@ -87,7 +87,9 @@ export default function SessionsPage() {
       })
 
       if (!createRes.ok) {
-        throw new Error("Failed to create session")
+        throw new Error(
+          await getApiErrorMessage(createRes, "Failed to create session"),
+        )
       }
 
       const created = await createRes.json()
@@ -104,8 +106,9 @@ export default function SessionsPage() {
       })
 
       if (!joinRes.ok) {
-        const joinError = await joinRes.json().catch(() => null)
-        throw new Error(joinError?.message ?? "Failed to join session")
+        throw new Error(
+          await getApiErrorMessage(joinRes, "Failed to join session"),
+        )
       }
 
       const joinPayload = await joinRes.json()
@@ -166,8 +169,9 @@ export default function SessionsPage() {
       })
 
       if (!joinRes.ok) {
-        const joinError = await joinRes.json().catch(() => null)
-        throw new Error(joinError?.message ?? "Failed to join session")
+        throw new Error(
+          await getApiErrorMessage(joinRes, "Failed to join session"),
+        )
       }
 
       const joinPayload = await joinRes.json()

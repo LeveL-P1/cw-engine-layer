@@ -19,26 +19,13 @@ import { getStoredSession } from "@/lib/session-storage"
 import { ProtectedRoute } from "@/components/ProtectedRoute"
 import {
   fetchSessionDetails,
-  type SessionDetailsDto,
 } from "@/lib/session-api"
 import { apiFetch } from "@/lib/api"
-
-type PerUser = {
-  userId: string
-  edits: number
-}
-
-type Metrics = {
-  totalEdits: number
-  activeUsers: number
-  dominanceRatio: number
-  perUser: PerUser[]
-}
-
-type TimelinePoint = {
-  timestamp: string
-  edits: number
-}
+import type {
+  SessionDetails,
+  SessionMetrics,
+  TimelinePoint,
+} from "@/types/session"
 
 type TransitionDto = {
   timestamp: string
@@ -47,7 +34,7 @@ type TransitionDto = {
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000"
 
-function emptyMetrics(): Metrics {
+function emptyMetrics(): SessionMetrics {
   return {
     totalEdits: 0,
     activeUsers: 1,
@@ -60,7 +47,7 @@ export default function DashboardSessionPage() {
   const router = useRouter()
   const params = useParams<{ sessionId: string }>()
   const [loadedAt] = useState(() => Date.now())
-  const [metrics, setMetrics] = useState<Metrics | null>(null)
+  const [metrics, setMetrics] = useState<SessionMetrics | null>(null)
   const [mode, setMode] = useState<string>("FREE")
   const [sessionInfo] = useState<null | {
     sessionId: string
@@ -69,7 +56,7 @@ export default function DashboardSessionPage() {
     displayName: string
     sessionName: string
   }>(() => getStoredSession())
-  const [sessionDetails, setSessionDetails] = useState<SessionDetailsDto | null>(null)
+  const [sessionDetails, setSessionDetails] = useState<SessionDetails | null>(null)
   const [timeline, setTimeline] = useState<TimelinePoint[]>([])
   const [modeTransitions, setModeTransitions] = useState<ModeTransition[]>([])
 

@@ -9,8 +9,8 @@ import { ProtectedRoute } from "@/components/ProtectedRoute"
 import { getStoredSession } from "@/lib/session-storage"
 import {
   fetchSessionDetails,
-  type SessionDetailsDto,
 } from "@/lib/session-api"
+import type { SessionDetails } from "@/types/session"
 
 function getFallbackActiveUsers(sessionState: {
   userId: string
@@ -37,7 +37,7 @@ export default function WhiteboardSessionPage() {
     displayName: string
     sessionName: string
   }>(() => getStoredSession())
-  const [sessionDetails, setSessionDetails] = useState<SessionDetailsDto | null>(null)
+  const [sessionDetails, setSessionDetails] = useState<SessionDetails | null>(null)
 
   useEffect(() => {
     if (!sessionState || sessionState.sessionId !== params.sessionId) {

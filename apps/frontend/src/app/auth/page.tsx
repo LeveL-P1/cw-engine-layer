@@ -83,7 +83,7 @@ export default function AuthPage() {
 
             <div className="space-y-3 text-sm text-slate-300">
               <p>Current app flow:</p>
-              <p>/auth -&gt; /sessions -&gt; /whiteboard/[sessionId] -&gt; /dashboard/[sessionId] -&gt; /summary/[sessionId]</p>
+              <p>/ -&gt; /auth -&gt; /sessions -&gt; /whiteboard/[sessionId] -&gt; /dashboard/[sessionId] -&gt; /summary/[sessionId]</p>
             </div>
           </div>
 
