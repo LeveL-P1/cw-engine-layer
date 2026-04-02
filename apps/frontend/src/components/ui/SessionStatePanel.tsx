@@ -1,6 +1,6 @@
 "use client"
 
-import Link from "next/link"
+import { StatePanel } from "@/components/ui/StatePanel"
 import type { SessionUIState } from "@/types/session"
 
 const defaults: Record<SessionUIState, { title: string; message: string }> = {
@@ -40,24 +40,16 @@ export function SessionStatePanel({
   actionLabel,
 }: SessionStatePanelProps) {
   const fallback = defaults[state]
+  const tone = state === "error" || state === "unauthorized" ? "danger" : "neutral"
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-950 px-4 text-zinc-100">
-      <div className="w-full max-w-md rounded-xl border border-zinc-800 bg-zinc-900 p-8">
-        {state === "loading" ? (
-          <div className="mb-4 h-8 w-8 animate-spin rounded-full border-4 border-cyan-500 border-t-transparent" />
-        ) : null}
-        <h1 className="text-2xl font-semibold">{fallback.title}</h1>
-        <p className="mt-3 text-sm text-zinc-400">{message ?? fallback.message}</p>
-        {actionHref && actionLabel ? (
-          <Link
-            href={actionHref}
-            className="mt-6 inline-flex rounded-md bg-cyan-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-cyan-500"
-          >
-            {actionLabel}
-          </Link>
-        ) : null}
-      </div>
-    </div>
+    <StatePanel
+      title={fallback.title}
+      message={message ?? fallback.message}
+      tone={tone}
+      loading={state === "loading"}
+      actionHref={actionHref}
+      actionLabel={actionLabel}
+    />
   )
 }

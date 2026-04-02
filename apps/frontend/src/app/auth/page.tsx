@@ -4,6 +4,11 @@ import { useEffect, useState } from "react"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useAuth } from "@/context/auth-context"
+import { AlertMessage } from "@/components/ui/AlertMessage"
+import { Button } from "@/components/ui/Button"
+import { Input } from "@/components/ui/Input"
+import { StatePanel } from "@/components/ui/StatePanel"
+import { SurfaceCard } from "@/components/ui/SurfaceCard"
 
 type AuthMode = "signin" | "signup"
 
@@ -27,6 +32,26 @@ export default function AuthPage() {
       router.replace("/sessions")
     }
   }, [isAuthenticated, router])
+
+  if (isLoading && !isAuthenticated) {
+    return (
+      <StatePanel
+        title="Loading authentication"
+        message="Checking your session and preparing sign-in options..."
+        loading
+      />
+    )
+  }
+
+  if (isAuthenticated) {
+    return (
+      <StatePanel
+        title="Redirecting"
+        message="Your account is active. Moving you to the session lobby..."
+        loading
+      />
+    )
+  }
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = event.target
@@ -66,7 +91,7 @@ export default function AuthPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 px-4 py-10 text-white">
       <div className="mx-auto flex min-h-[calc(100vh-5rem)] max-w-5xl items-center justify-center">
-        <div className="grid w-full overflow-hidden rounded-3xl border border-slate-700 bg-slate-900/80 shadow-2xl backdrop-blur md:grid-cols-[1.1fr_0.9fr]">
+        <SurfaceCard className="grid w-full overflow-hidden border-slate-700 bg-slate-900/80 backdrop-blur md:grid-cols-[1.1fr_0.9fr]">
           <div className="flex flex-col justify-between bg-[radial-gradient(circle_at_top_left,_rgba(59,130,246,0.28),_transparent_40%),linear-gradient(180deg,rgba(15,23,42,0.95),rgba(2,6,23,1))] p-8 md:p-10">
             <div className="space-y-4">
               <p className="text-sm uppercase tracking-[0.35em] text-blue-300">
@@ -89,7 +114,7 @@ export default function AuthPage() {
 
           <div className="p-8 md:p-10">
             <div className="mb-6 flex rounded-xl bg-slate-800 p-1">
-              <button
+              <Button
                 type="button"
                 onClick={() => {
                   router.replace("/auth?mode=signin")
@@ -101,8 +126,8 @@ export default function AuthPage() {
                 }`}
               >
                 Sign In
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
                 onClick={() => {
                   router.replace("/auth?mode=signup")
@@ -114,7 +139,7 @@ export default function AuthPage() {
                 }`}
               >
                 Sign Up
-              </button>
+              </Button>
             </div>
 
             <div className="mb-6">
@@ -129,50 +154,42 @@ export default function AuthPage() {
             </div>
 
             {error ? (
-              <div className="mb-4 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
-                {error}
+              <div className="mb-4">
+                <AlertMessage message={error} tone="error" />
               </div>
             ) : null}
 
             {success ? (
-              <div className="mb-4 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-300">
-                {success}
+              <div className="mb-4">
+                <AlertMessage message={success} tone="success" />
               </div>
             ) : null}
 
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label htmlFor="email" className="mb-1 block text-sm text-slate-300">
-                  Email
-                </label>
-                <input
-                  id="email"
-                  name="email"
-                  type="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  required
-                  className="w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-2.5 text-white focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                  placeholder="you@example.com"
-                />
-              </div>
+              <Input
+                id="email"
+                name="email"
+                type="email"
+                label="Email"
+                value={formData.email}
+                onChange={handleChange}
+                required
+                className="border-slate-700 bg-slate-950 text-white"
+                placeholder="you@example.com"
+              />
 
               {mode === "signup" ? (
-                <div>
-                  <label htmlFor="name" className="mb-1 block text-sm text-slate-300">
-                    Full Name
-                  </label>
-                  <input
-                    id="name"
-                    name="name"
-                    type="text"
-                    value={formData.name}
-                    onChange={handleChange}
-                    required
-                    className="w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-2.5 text-white focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                    placeholder="John Doe"
-                  />
-                </div>
+                <Input
+                  id="name"
+                  name="name"
+                  type="text"
+                  label="Full Name"
+                  value={formData.name}
+                  onChange={handleChange}
+                  required
+                  className="border-slate-700 bg-slate-950 text-white"
+                  placeholder="John Doe"
+                />
               ) : null}
 
               <div>
@@ -189,40 +206,37 @@ export default function AuthPage() {
                     </Link>
                   ) : null}
                 </div>
-                <input
+                <Input
                   id="password"
                   name="password"
                   type="password"
                   value={formData.password}
                   onChange={handleChange}
                   required
-                  className="w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-2.5 text-white focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  className="border-slate-700 bg-slate-950 text-white"
                   placeholder="Enter your password"
                 />
               </div>
 
               {mode === "signup" ? (
-                <div>
-                  <label htmlFor="confirmPassword" className="mb-1 block text-sm text-slate-300">
-                    Confirm Password
-                  </label>
-                  <input
-                    id="confirmPassword"
-                    name="confirmPassword"
-                    type="password"
-                    value={formData.confirmPassword}
-                    onChange={handleChange}
-                    required
-                    className="w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-2.5 text-white focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                    placeholder="Confirm your password"
-                  />
-                </div>
+                <Input
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  type="password"
+                  label="Confirm Password"
+                  value={formData.confirmPassword}
+                  onChange={handleChange}
+                  required
+                  className="border-slate-700 bg-slate-950 text-white"
+                  placeholder="Confirm your password"
+                />
               ) : null}
 
-              <button
+              <Button
                 type="submit"
                 disabled={isLoading}
-                className="w-full rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-60"
+                fullWidth
+                className="bg-blue-600 hover:bg-blue-500"
               >
                 {isLoading
                   ? mode === "signin"
@@ -231,10 +245,10 @@ export default function AuthPage() {
                   : mode === "signin"
                     ? "Sign In"
                     : "Create Account"}
-              </button>
+              </Button>
             </form>
           </div>
-        </div>
+        </SurfaceCard>
       </div>
     </div>
   )

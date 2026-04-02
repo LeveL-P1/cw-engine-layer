@@ -3,6 +3,11 @@
 import { useEffect, useMemo, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { ProtectedRoute } from "@/components/ProtectedRoute"
+import { AlertMessage } from "@/components/ui/AlertMessage"
+import { Button } from "@/components/ui/Button"
+import { Input } from "@/components/ui/Input"
+import { StatePanel } from "@/components/ui/StatePanel"
+import { SurfaceCard } from "@/components/ui/SurfaceCard"
 import { useAuth } from "@/context/auth-context"
 import { setStoredSession } from "@/lib/session-storage"
 import { apiFetch, getApiErrorMessage } from "@/lib/api"
@@ -50,6 +55,18 @@ export default function SessionsPage() {
       setJoinSessionId(invitedSessionId)
     }
   }, [invitedSessionId])
+
+  if (!user) {
+    return (
+      <ProtectedRoute>
+        <StatePanel
+          title="Loading your lobby"
+          message="Restoring your account before opening the session lobby..."
+          loading
+        />
+      </ProtectedRoute>
+    )
+  }
 
   const handleLogout = async () => {
     try {
@@ -198,81 +215,81 @@ export default function SessionsPage() {
 
   return (
     <ProtectedRoute>
-      <div className="flex min-h-screen items-center justify-center bg-zinc-950 px-4 text-zinc-100">
-        <div className="w-full max-w-md space-y-6 rounded-xl border border-zinc-800 bg-zinc-900 p-8">
+      <div className="flex min-h-screen items-center justify-center bg-[var(--color-bg-canvas)] px-4 text-[var(--color-text-primary)]">
+        <SurfaceCard className="w-full max-w-md space-y-6 bg-[var(--color-bg-surface)] p-8">
           <div className="flex items-start justify-between gap-4">
             <div className="space-y-2">
               <h1 className="text-2xl font-semibold">
                 Start a governed whiteboard session
               </h1>
-              <p className="text-sm text-zinc-400">
+              <p className="text-sm text-[var(--color-text-muted)]">
                 Signed in as {user?.name ?? "user"}.
               </p>
-              <p className="text-sm text-zinc-500">
+              <p className="text-sm text-[var(--color-text-muted)]">
                 {invitedSessionId
                   ? "An invite link pre-filled the session for you. Enter your display name and join."
                   : "Create a new session or join an existing one with its invite link or ID."}
               </p>
             </div>
-            <button
+            <Button
               type="button"
               onClick={handleLogout}
               disabled={isLoggingOut}
-              className="rounded-md border border-zinc-700 px-3 py-2 text-sm font-medium text-zinc-100 transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60"
+              variant="secondary"
             >
               {isLoggingOut ? "Signing out..." : "Logout"}
-            </button>
+            </Button>
           </div>
 
-          <div className="space-y-2">
-            <label className="text-sm text-zinc-300">Your display name</label>
-            <input
-              value={displayName}
-              onChange={(event) => setDisplayName(event.target.value)}
-              className="w-full rounded-md border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder={user?.name ?? "Enter your name"}
-            />
-          </div>
+          <Input
+            id="displayName"
+            label="Your display name"
+            value={displayName}
+            onChange={(event) => setDisplayName(event.target.value)}
+            placeholder={user?.name ?? "Enter your name"}
+          />
 
-          <div className="space-y-2">
-            <label className="text-sm text-zinc-300">New session name</label>
-            <input
-              value={sessionName}
-              onChange={(event) => setSessionName(event.target.value)}
-              className="w-full rounded-md border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder={DEFAULT_SESSION_NAME}
-            />
-          </div>
+          <Input
+            id="sessionName"
+            label="New session name"
+            value={sessionName}
+            onChange={(event) => setSessionName(event.target.value)}
+            placeholder={DEFAULT_SESSION_NAME}
+          />
 
-          <div className="space-y-2">
-            <label className="text-sm text-zinc-300">Session invite or ID</label>
-            <input
-              value={joinSessionId}
-              onChange={(event) => setJoinSessionId(event.target.value)}
-              className="w-full rounded-md border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Paste an invite session ID"
-            />
-          </div>
+          <Input
+            id="joinSessionId"
+            label="Session invite or ID"
+            value={joinSessionId}
+            onChange={(event) => setJoinSessionId(event.target.value)}
+            placeholder="Paste an invite session ID"
+            helperText={
+              invitedSessionId
+                ? "Invite link detected. Review your display name and join when ready."
+                : undefined
+            }
+          />
 
-          {error ? <p className="text-sm text-red-500">{error}</p> : null}
+          {error ? <AlertMessage message={error} tone="error" /> : null}
 
           <div className="grid gap-3 sm:grid-cols-2">
-            <button
+            <Button
               onClick={handleStartSession}
               disabled={submitting || isLoggingOut}
-              className="w-full rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-500 disabled:opacity-60"
+              fullWidth
             >
               {submitting ? "Working..." : "Create Session"}
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={handleJoinSession}
               disabled={submitting || isLoggingOut}
-              className="w-full rounded-md border border-zinc-700 bg-zinc-950 px-4 py-2 text-sm font-medium text-zinc-100 hover:bg-zinc-900 disabled:opacity-60"
+              variant="secondary"
+              fullWidth
             >
               {submitting ? "Working..." : "Join Session"}
-            </button>
+            </Button>
           </div>
-        </div>
+        </SurfaceCard>
       </div>
     </ProtectedRoute>
   )

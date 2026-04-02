@@ -3,6 +3,7 @@
 import { ReactNode, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/context/auth-context"
+import { StatePanel } from "@/components/ui/StatePanel"
 
 interface ProtectedRouteProps {
   children: ReactNode
@@ -25,9 +26,11 @@ export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) 
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin h-8 w-8 border-4 border-blue-500 border-t-transparent rounded-full"></div>
-      </div>
+      <StatePanel
+        title="Checking authentication"
+        message="Restoring your session before opening this page..."
+        loading
+      />
     )
   }
 
