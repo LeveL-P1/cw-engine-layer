@@ -6,11 +6,13 @@ import { useEffect, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { getStoredSession } from "@/lib/session-storage"
 import { ProtectedRoute } from "@/components/ProtectedRoute"
+import { SessionStatePanel } from "@/components/ui/SessionStatePanel"
 import {
   fetchSessionDetails,
 } from "@/lib/session-api"
 import { apiFetch } from "@/lib/api"
-import type { SessionDetails, SessionMetrics } from "@/types/session"
+import { getSessionUiMessage, resolveSessionUiState } from "@/lib/session-ui"
+import type { SessionDetails, SessionMetrics, SessionUIState } from "@/types/session"
 
 type TransitionDto = {
   timestamp: string
@@ -44,6 +46,8 @@ export default function SessionSummaryPage() {
     { mode: string; durationMinutes: number }[]
   >([])
   const [loadedAt] = useState(() => Date.now())
+  const [uiState, setUiState] = useState<SessionUIState>("loading")
+  const [uiMessage, setUiMessage] = useState<string | undefined>(undefined)
 
   useEffect(() => {
     if (!sessionInfo || sessionInfo.sessionId !== params.sessionId) {
@@ -61,10 +65,18 @@ export default function SessionSummaryPage() {
         const details = await fetchSessionDetails(sessionInfo.sessionId)
         if (!cancelled) {
           setSessionDetails(details)
+          setUiState("ready")
+          setUiMessage(undefined)
         }
-      } catch {
+      } catch (error) {
         if (!cancelled) {
-          router.replace("/sessions")
+          setUiState(resolveSessionUiState(error))
+          setUiMessage(
+            getSessionUiMessage(
+              error,
+              "Unable to load session context for this summary.",
+            ),
+          )
         }
       }
     }
@@ -101,8 +113,18 @@ export default function SessionSummaryPage() {
         if (!transitions.length || cancelled) return
 
         setModeBreakdown(computeModeDurations(transitions))
-      } catch {
+      } catch (error) {
         if (!cancelled) {
+          if (resolveSessionUiState(error) === "unauthorized") {
+            setUiState("unauthorized")
+            setUiMessage(
+              getSessionUiMessage(
+                error,
+                "Your auth session expired while loading summary analytics.",
+              ),
+            )
+            return
+          }
           setMetrics(emptyMetrics())
           setModeBreakdown([])
         }
@@ -143,8 +165,20 @@ export default function SessionSummaryPage() {
 
   return (
     <ProtectedRoute>
-      {!sessionInfo || sessionInfo.sessionId !== params.sessionId || !metrics ? (
-        <div className="p-6">Loading summary...</div>
+      {!sessionInfo || sessionInfo.sessionId !== params.sessionId ? (
+        <SessionStatePanel
+          state="loading"
+          message="Validating your active session and preparing summary..."
+        />
+      ) : uiState !== "ready" ? (
+        <SessionStatePanel
+          state={uiState}
+          message={uiMessage}
+          actionHref={uiState === "unauthorized" ? "/auth" : "/sessions"}
+          actionLabel={uiState === "unauthorized" ? "Go to Auth" : "Back to Sessions"}
+        />
+      ) : !metrics ? (
+        <SessionStatePanel state="loading" message="Loading summary metrics..." />
       ) : (
         (() => {
           const activeUsers =

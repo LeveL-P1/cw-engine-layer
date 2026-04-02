@@ -17,13 +17,16 @@ import { ActivityTimeline } from "@/components/analytics/ActivityTimeline"
 import type { ModeTransition } from "@/components/analytics/ActivityTimeline"
 import { getStoredSession } from "@/lib/session-storage"
 import { ProtectedRoute } from "@/components/ProtectedRoute"
+import { SessionStatePanel } from "@/components/ui/SessionStatePanel"
 import {
   fetchSessionDetails,
 } from "@/lib/session-api"
 import { apiFetch } from "@/lib/api"
+import { getSessionUiMessage, resolveSessionUiState } from "@/lib/session-ui"
 import type {
   SessionDetails,
   SessionMetrics,
+  SessionUIState,
   TimelinePoint,
 } from "@/types/session"
 
@@ -59,6 +62,8 @@ export default function DashboardSessionPage() {
   const [sessionDetails, setSessionDetails] = useState<SessionDetails | null>(null)
   const [timeline, setTimeline] = useState<TimelinePoint[]>([])
   const [modeTransitions, setModeTransitions] = useState<ModeTransition[]>([])
+  const [uiState, setUiState] = useState<SessionUIState>("loading")
+  const [uiMessage, setUiMessage] = useState<string | undefined>(undefined)
 
   useEffect(() => {
     if (!sessionInfo || sessionInfo.sessionId !== params.sessionId) {
@@ -81,10 +86,18 @@ export default function DashboardSessionPage() {
         if (mounted) {
           setSessionDetails(details)
           setMode(details.currentMode)
+          setUiState("ready")
+          setUiMessage(undefined)
         }
-      } catch {
+      } catch (error) {
         if (mounted) {
-          router.replace("/sessions")
+          setUiState(resolveSessionUiState(error))
+          setUiMessage(
+            getSessionUiMessage(
+              error,
+              "Unable to load session metadata for this dashboard.",
+            ),
+          )
         }
       }
     }
@@ -108,8 +121,18 @@ export default function DashboardSessionPage() {
         if (mounted) {
           setMetrics(data.data)
         }
-      } catch {
+      } catch (error) {
         if (mounted) {
+          if (resolveSessionUiState(error) === "unauthorized") {
+            setUiState("unauthorized")
+            setUiMessage(
+              getSessionUiMessage(
+                error,
+                "Your auth session expired while loading dashboard metrics.",
+              ),
+            )
+            return
+          }
           setMetrics(emptyMetrics())
         }
       }
@@ -124,8 +147,16 @@ export default function DashboardSessionPage() {
         if (mounted) {
           setMode(data.mode)
         }
-      } catch {
-        // Keep default mode when API is unavailable.
+      } catch (error) {
+        if (mounted && resolveSessionUiState(error) === "unauthorized") {
+          setUiState("unauthorized")
+          setUiMessage(
+            getSessionUiMessage(
+              error,
+              "You no longer have permission to view this session mode.",
+            ),
+          )
+        }
       }
     }
 
@@ -141,8 +172,18 @@ export default function DashboardSessionPage() {
         if (mounted) {
           setTimeline(data.data)
         }
-      } catch {
+      } catch (error) {
         if (mounted) {
+          if (resolveSessionUiState(error) === "unauthorized") {
+            setUiState("unauthorized")
+            setUiMessage(
+              getSessionUiMessage(
+                error,
+                "You no longer have permission to view timeline analytics.",
+              ),
+            )
+            return
+          }
           setTimeline([])
         }
       }
@@ -171,8 +212,18 @@ export default function DashboardSessionPage() {
 
           setModeTransitions(mapped)
         }
-      } catch {
+      } catch (error) {
         if (mounted) {
+          if (resolveSessionUiState(error) === "unauthorized") {
+            setUiState("unauthorized")
+            setUiMessage(
+              getSessionUiMessage(
+                error,
+                "You no longer have permission to view mode transitions.",
+              ),
+            )
+            return
+          }
           setModeTransitions([])
         }
       }
@@ -201,8 +252,20 @@ export default function DashboardSessionPage() {
 
   return (
     <ProtectedRoute>
-      {!sessionInfo || sessionInfo.sessionId !== params.sessionId || !metrics ? (
-        <div className="p-6">Loading dashboard...</div>
+      {!sessionInfo || sessionInfo.sessionId !== params.sessionId ? (
+        <SessionStatePanel
+          state="loading"
+          message="Validating your active session and opening dashboard..."
+        />
+      ) : uiState !== "ready" ? (
+        <SessionStatePanel
+          state={uiState}
+          message={uiMessage}
+          actionHref={uiState === "unauthorized" ? "/auth" : "/sessions"}
+          actionLabel={uiState === "unauthorized" ? "Go to Auth" : "Back to Sessions"}
+        />
+      ) : !metrics ? (
+        <SessionStatePanel state="loading" message="Loading dashboard metrics..." />
       ) : (
         (() => {
           const activeUsers =

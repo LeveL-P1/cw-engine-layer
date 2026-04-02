@@ -6,11 +6,13 @@ import Whiteboard from "@/components/whiteboard/whiteboard"
 import { SessionProvider, type RoleType } from "@/context/session-context"
 import { AppShell } from "@/components/layout/AppShell"
 import { ProtectedRoute } from "@/components/ProtectedRoute"
+import { SessionStatePanel } from "@/components/ui/SessionStatePanel"
 import { getStoredSession } from "@/lib/session-storage"
+import { getSessionUiMessage, resolveSessionUiState } from "@/lib/session-ui"
 import {
   fetchSessionDetails,
 } from "@/lib/session-api"
-import type { SessionDetails } from "@/types/session"
+import type { SessionDetails, SessionUIState } from "@/types/session"
 
 function getFallbackActiveUsers(sessionState: {
   userId: string
@@ -38,6 +40,8 @@ export default function WhiteboardSessionPage() {
     sessionName: string
   }>(() => getStoredSession())
   const [sessionDetails, setSessionDetails] = useState<SessionDetails | null>(null)
+  const [uiState, setUiState] = useState<SessionUIState>("loading")
+  const [uiMessage, setUiMessage] = useState<string | undefined>(undefined)
 
   useEffect(() => {
     if (!sessionState || sessionState.sessionId !== params.sessionId) {
@@ -57,10 +61,18 @@ export default function WhiteboardSessionPage() {
         const details = await fetchSessionDetails(sessionState.sessionId)
         if (mounted) {
           setSessionDetails(details)
+          setUiState("ready")
+          setUiMessage(undefined)
         }
-      } catch {
+      } catch (error) {
         if (mounted) {
-          router.replace("/sessions")
+          setUiState(resolveSessionUiState(error))
+          setUiMessage(
+            getSessionUiMessage(
+              error,
+              "Unable to load this session. Please return to the sessions lobby.",
+            ),
+          )
         }
       }
     }
@@ -79,9 +91,23 @@ export default function WhiteboardSessionPage() {
   if (!sessionState || sessionState.sessionId !== params.sessionId) {
     return (
       <ProtectedRoute>
-        <div className="flex min-h-screen items-center justify-center bg-zinc-950 text-zinc-100">
-          Redirecting to sessions...
-        </div>
+        <SessionStatePanel
+          state="loading"
+          message="Checking your session state and redirecting to the lobby..."
+        />
+      </ProtectedRoute>
+    )
+  }
+
+  if (uiState !== "ready") {
+    return (
+      <ProtectedRoute>
+        <SessionStatePanel
+          state={uiState}
+          message={uiMessage}
+          actionHref={uiState === "unauthorized" ? "/auth" : "/sessions"}
+          actionLabel={uiState === "unauthorized" ? "Go to Auth" : "Back to Sessions"}
+        />
       </ProtectedRoute>
     )
   }
