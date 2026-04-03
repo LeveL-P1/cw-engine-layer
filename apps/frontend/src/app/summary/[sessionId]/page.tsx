@@ -7,6 +7,7 @@ import { useParams, useRouter } from "next/navigation"
 import { getStoredSession } from "@/lib/session-storage"
 import { ProtectedRoute } from "@/components/ProtectedRoute"
 import { SessionStatePanel } from "@/components/ui/SessionStatePanel"
+import { InlineLoader } from "@/components/ui/InlineLoader"
 import {
   fetchSessionDetails,
 } from "@/lib/session-api"
@@ -140,9 +141,6 @@ export default function SessionSummaryPage() {
   }, [params.sessionId, router, sessionInfo])
 
   const sessionName = sessionDetails?.name ?? sessionInfo?.sessionName ?? "Whiteboard Session"
-  const totalEdits = metrics?.totalEdits ?? 0
-  const dominanceRatio = metrics?.dominanceRatio ?? 0
-  const participants = metrics?.activeUsers ?? 1
   const mostActiveUser =
     metrics && metrics.perUser.length > 0
       ? metrics.perUser.reduce((left, right) =>
@@ -170,17 +168,16 @@ export default function SessionSummaryPage() {
           state="loading"
           message="Validating your active session and preparing summary..."
         />
-      ) : uiState !== "ready" ? (
+      ) : uiState === "unauthorized" || uiState === "error" ? (
         <SessionStatePanel
           state={uiState}
           message={uiMessage}
           actionHref={uiState === "unauthorized" ? "/auth" : "/sessions"}
           actionLabel={uiState === "unauthorized" ? "Go to Auth" : "Back to Sessions"}
         />
-      ) : !metrics ? (
-        <SessionStatePanel state="loading" message="Loading summary metrics..." />
       ) : (
         (() => {
+          const resolvedMetrics = metrics ?? emptyMetrics()
           const activeUsers =
             sessionDetails?.participants.length
               ? sessionDetails.participants.map((participant) => ({
@@ -211,28 +208,33 @@ export default function SessionSummaryPage() {
             sessionName,
             role: currentUserRole,
             mode: sessionDetails?.currentMode ?? "FREE",
-            dominanceRatio,
+            dominanceRatio: resolvedMetrics.dominanceRatio,
             activeUsers,
             sessionStartTime,
             modeStartedAt: loadedAt,
           }}
         >
-          <AppShell>
+          <AppShell contentScrollable>
             <div className="space-y-8">
-              <div>
+              <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                <div>
                 <h1 className="mb-2 text-2xl font-semibold">Session Summary</h1>
                 <p className="text-sm text-zinc-400">
                   Analytical overview of collaboration performance
                 </p>
+                </div>
+                {uiState === "loading" || !metrics ? (
+                  <InlineLoader label="Refreshing summary..." />
+                ) : null}
               </div>
 
               <button
                 onClick={() =>
                   exportReport({
                     sessionName,
-                    totalEdits,
-                    participants,
-                    dominanceRatio,
+                    totalEdits: resolvedMetrics.totalEdits,
+                    participants: resolvedMetrics.activeUsers,
+                    dominanceRatio: resolvedMetrics.dominanceRatio,
                     mostActiveUser,
                     modes: modeBreakdown,
                   })
@@ -244,11 +246,11 @@ export default function SessionSummaryPage() {
 
               <div className="grid grid-cols-2 gap-6 md:grid-cols-3">
                 <SummaryCard label="Session Name" value={sessionName} />
-                <SummaryCard label="Total Edits" value={totalEdits} />
-                <SummaryCard label="Participants" value={participants} />
+                <SummaryCard label="Total Edits" value={resolvedMetrics.totalEdits} />
+                <SummaryCard label="Participants" value={resolvedMetrics.activeUsers} />
                 <SummaryCard
                   label="Dominance Ratio"
-                  value={dominanceRatio.toFixed(2)}
+                  value={resolvedMetrics.dominanceRatio.toFixed(2)}
                 />
                 <SummaryCard label="Most Active User" value={mostActiveUser} />
               </div>

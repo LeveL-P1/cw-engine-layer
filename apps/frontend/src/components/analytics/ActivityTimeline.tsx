@@ -1,5 +1,6 @@
 "use client"
 
+import clsx from "clsx"
 import {
   LineChart,
   Line,
@@ -25,6 +26,9 @@ export type ModeTransition = {
 interface Props {
   data: TimelinePoint[]
   transitions: ModeTransition[]
+  title?: string
+  chrome?: "card" | "plain"
+  height?: number
 }
 
 
@@ -41,43 +45,65 @@ function getModeColor(mode: ModeType) {
   }
 }
 
-export function ActivityTimeline({ data, transitions }: Props) {
-  return (
-    <div className="bg-zinc-900 p-6 rounded-lg border border-zinc-800">
-      <h3 className="text-lg font-semibold mb-4">
-        Activity Timeline with Mode Transitions
-      </h3>
+export function ActivityTimeline({
+  data,
+  transitions,
+  title = "Activity Timeline with Mode Transitions",
+  chrome = "card",
+  height = 300,
+}: Props) {
+  const chart = (
+    <ResponsiveContainer width="100%" height={height}>
+      <LineChart data={data}>
+        <XAxis dataKey="time" stroke="#888" />
+        <YAxis stroke="#888" />
+        <Tooltip />
 
-      <ResponsiveContainer width="100%" height={300}>
-        <LineChart data={data}>
-          <XAxis dataKey="time" stroke="#888" />
-          <YAxis stroke="#888" />
-          <Tooltip />
+        <Line
+          type="monotone"
+          dataKey="edits"
+          stroke="var(--color-chart-2)"
+          strokeWidth={2}
+          dot={false}
+        />
 
-          <Line
-            type="monotone"
-            dataKey="edits"
-            stroke="#3b82f6"
-            strokeWidth={2}
-            dot={false}
+        {transitions.map((t, index) => (
+          <ReferenceLine
+            key={index}
+            x={t.time}
+            stroke={getModeColor(t.mode)}
+            strokeDasharray="3 3"
+            label={{
+              value: t.mode,
+              position: "top",
+              fill: getModeColor(t.mode),
+              fontSize: 12,
+            }}
           />
+        ))}
+      </LineChart>
+    </ResponsiveContainer>
+  )
 
-          {transitions.map((t, index) => (
-            <ReferenceLine
-              key={index}
-              x={t.time}
-              stroke={getModeColor(t.mode)}
-              strokeDasharray="3 3"
-              label={{
-                value: t.mode,
-                position: "top",
-                fill: getModeColor(t.mode),
-                fontSize: 12,
-              }}
-            />
-          ))}
-        </LineChart>
-      </ResponsiveContainer>
+  if (chrome === "plain") {
+    return (
+      <div className="h-full">
+        <h3 className="mb-4 text-lg font-semibold text-[var(--color-text-primary)]">
+          {title}
+        </h3>
+        {chart}
+      </div>
+    )
+  }
+
+  return (
+    <div
+      className={clsx(
+        "rounded-lg border border-zinc-800 bg-zinc-900 p-6",
+      )}
+    >
+      <h3 className="mb-4 text-lg font-semibold">{title}</h3>
+      {chart}
     </div>
   )
 }

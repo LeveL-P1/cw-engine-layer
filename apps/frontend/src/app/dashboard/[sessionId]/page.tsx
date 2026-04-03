@@ -3,21 +3,18 @@
 import { connectWebSocket, setModeListener } from "@/lib/websocket"
 import { useEffect, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-} from "recharts"
 import { AppShell } from "@/components/layout/AppShell"
 import { SessionProvider, type RoleType } from "@/context/session-context"
 import { ActivityTimeline } from "@/components/analytics/ActivityTimeline"
+import { AnalyticsChartCard } from "@/components/analytics/AnalyticsChartCard"
 import type { ModeTransition } from "@/components/analytics/ActivityTimeline"
+import { ParticipationBreakdown } from "@/components/analytics/ParticipationBreakdown"
 import { getStoredSession } from "@/lib/session-storage"
 import { ProtectedRoute } from "@/components/ProtectedRoute"
 import { SessionStatePanel } from "@/components/ui/SessionStatePanel"
+import { Button } from "@/components/ui/Button"
+import { InlineLoader } from "@/components/ui/InlineLoader"
+import { SurfaceCard } from "@/components/ui/SurfaceCard"
 import {
   fetchSessionDetails,
 } from "@/lib/session-api"
@@ -64,6 +61,9 @@ export default function DashboardSessionPage() {
   const [modeTransitions, setModeTransitions] = useState<ModeTransition[]>([])
   const [uiState, setUiState] = useState<SessionUIState>("loading")
   const [uiMessage, setUiMessage] = useState<string | undefined>(undefined)
+  const [expandedChart, setExpandedChart] = useState<"timeline" | "breakdown">(
+    "timeline",
+  )
 
   useEffect(() => {
     if (!sessionInfo || sessionInfo.sessionId !== params.sessionId) {
@@ -257,17 +257,16 @@ export default function DashboardSessionPage() {
           state="loading"
           message="Validating your active session and opening dashboard..."
         />
-      ) : uiState !== "ready" ? (
+      ) : uiState === "unauthorized" || uiState === "error" ? (
         <SessionStatePanel
           state={uiState}
           message={uiMessage}
           actionHref={uiState === "unauthorized" ? "/auth" : "/sessions"}
           actionLabel={uiState === "unauthorized" ? "Go to Auth" : "Back to Sessions"}
         />
-      ) : !metrics ? (
-        <SessionStatePanel state="loading" message="Loading dashboard metrics..." />
       ) : (
         (() => {
+          const resolvedMetrics = metrics ?? emptyMetrics()
           const activeUsers =
             sessionDetails?.participants.length
               ? sessionDetails.participants.map((participant) => ({
@@ -298,21 +297,31 @@ export default function DashboardSessionPage() {
             sessionName: sessionDetails?.name ?? sessionInfo.sessionName,
             role: currentUserRole,
             mode: sessionDetails?.currentMode ?? (mode as "FREE" | "DECISION" | "LOCKED"),
-            dominanceRatio: metrics.dominanceRatio,
+            dominanceRatio: resolvedMetrics.dominanceRatio,
             activeUsers,
             sessionStartTime,
             modeStartedAt: loadedAt,
           }}
         >
-          <AppShell>
-            <div className="min-h-screen space-y-8 bg-gray-50 p-8 text-gray-900 transition-colors dark:bg-gray-900 dark:text-gray-100">
-              <div className="flex items-center justify-between">
-                <h1 className="text-2xl font-bold">Session Dashboard</h1>
+          <AppShell contentScrollable>
+            <div className="space-y-8 bg-[var(--color-bg-canvas)] p-6 text-[var(--color-text-primary)] md:p-8">
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                <div className="space-y-2">
+                  <p className="text-xs uppercase tracking-[0.28em] text-[var(--color-text-muted)]">
+                    Session Analytics
+                  </p>
+                  <h1 className="text-3xl font-semibold">Session Dashboard</h1>
+                </div>
 
                 <div className="flex items-center gap-4">
-                  <span className="font-semibold">Mode: {mode}</span>
+                  {uiState === "loading" || !metrics ? (
+                    <InlineLoader label="Refreshing analytics..." />
+                  ) : null}
+                  <span className="rounded-full border border-[var(--color-border-soft)] px-3 py-1 text-sm font-semibold">
+                    Mode: {mode}
+                  </span>
 
-                  <button
+                  <Button
                     onClick={async () => {
                       const newMode = mode === "FREE" ? "LOCKED" : "FREE"
 
@@ -326,56 +335,62 @@ export default function DashboardSessionPage() {
                         }),
                       })
                     }}
-                    className="rounded-lg bg-blue-500 px-4 py-2 text-white transition hover:bg-blue-600"
                   >
                     Toggle Mode
-                  </button>
+                  </Button>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-                <Card title="Total Edits" value={metrics.totalEdits} />
-                <Card title="Active Users" value={metrics.activeUsers} />
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                <Card title="Total Edits" value={resolvedMetrics.totalEdits} />
+                <Card title="Active Users" value={resolvedMetrics.activeUsers} />
                 <Card
                   title="Dominance Ratio"
-                  value={metrics.dominanceRatio.toFixed(2)}
+                  value={resolvedMetrics.dominanceRatio.toFixed(2)}
                 />
               </div>
 
-              {timeline.length > 0 ? (
-                <ActivityTimeline
-                  data={timeline.map((point) => ({
-                    time: new Date(point.timestamp).toLocaleTimeString([], {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    }),
-                    edits: point.edits,
-                  }))}
-                  transitions={modeTransitions}
-                />
-              ) : (
-                <div className="rounded-lg border border-zinc-800 bg-white p-6 shadow-md dark:bg-gray-800">
-                  <h2 className="text-lg font-semibold">No analytics yet</h2>
-                  <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                    Start drawing on the whiteboard and the session metrics will
-                    appear here.
-                  </p>
-                </div>
-              )}
+              <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+                <AnalyticsChartCard
+                  title="Activity Timeline"
+                  description="Track editing activity over time and see how governance mode changes affected the session."
+                  expanded={expandedChart === "timeline"}
+                  onToggle={() => setExpandedChart("timeline")}
+                >
+                  {timeline.length > 0 ? (
+                    <ActivityTimeline
+                      chrome="plain"
+                      data={timeline.map((point) => ({
+                        time: new Date(point.timestamp).toLocaleTimeString([], {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        }),
+                        edits: point.edits,
+                      }))}
+                      transitions={modeTransitions}
+                      height={320}
+                    />
+                  ) : (
+                    <EmptyChartState message="Start drawing on the whiteboard to populate your activity timeline." />
+                  )}
+                </AnalyticsChartCard>
 
-              <div className="h-80 w-full rounded-lg bg-white p-4 shadow-md dark:bg-gray-800">
-                <h2 className="mb-4 text-lg font-semibold">
-                  Participation Breakdown
-                </h2>
-
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={metrics.perUser}>
-                    <XAxis dataKey="userId" />
-                    <YAxis />
-                    <Tooltip />
-                    <Bar dataKey="edits" fill="#3b82f6" />
-                  </BarChart>
-                </ResponsiveContainer>
+                <AnalyticsChartCard
+                  title="Participation Breakdown"
+                  description="Compare how much each participant contributed so facilitators can spot imbalance quickly."
+                  expanded={expandedChart === "breakdown"}
+                  onToggle={() => setExpandedChart("breakdown")}
+                >
+                  {resolvedMetrics.perUser.length > 0 ? (
+                    <ParticipationBreakdown
+                      chrome="plain"
+                      data={resolvedMetrics.perUser}
+                      height={320}
+                    />
+                  ) : (
+                    <EmptyChartState message="Participant contribution bars will appear once edits are recorded." />
+                  )}
+                </AnalyticsChartCard>
               </div>
             </div>
           </AppShell>
@@ -389,9 +404,19 @@ export default function DashboardSessionPage() {
 
 function Card({ title, value }: { title: string; value: string | number }) {
   return (
-    <div className="rounded-lg bg-white p-6 shadow-md dark:bg-gray-800">
-      <h2 className="text-lg font-semibold">{title}</h2>
-      <p className="mt-2 text-3xl">{value}</p>
+    <SurfaceCard className="bg-[var(--color-bg-surface)] p-6">
+      <h2 className="text-lg font-semibold text-[var(--color-text-primary)]">
+        {title}
+      </h2>
+      <p className="mt-2 text-3xl text-[var(--color-text-primary)]">{value}</p>
+    </SurfaceCard>
+  )
+}
+
+function EmptyChartState({ message }: { message: string }) {
+  return (
+    <div className="rounded-xl border border-dashed border-[var(--color-border-soft)] bg-[var(--color-bg-elevated)] p-5 text-sm text-[var(--color-text-muted)]">
+      {message}
     </div>
   )
 }

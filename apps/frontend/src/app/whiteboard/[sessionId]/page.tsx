@@ -6,6 +6,7 @@ import Whiteboard from "@/components/whiteboard/whiteboard"
 import { SessionProvider, type RoleType } from "@/context/session-context"
 import { AppShell } from "@/components/layout/AppShell"
 import { ProtectedRoute } from "@/components/ProtectedRoute"
+import { InlineLoader } from "@/components/ui/InlineLoader"
 import { SessionStatePanel } from "@/components/ui/SessionStatePanel"
 import { getStoredSession } from "@/lib/session-storage"
 import { getSessionUiMessage, resolveSessionUiState } from "@/lib/session-ui"
@@ -99,7 +100,7 @@ export default function WhiteboardSessionPage() {
     )
   }
 
-  if (uiState !== "ready") {
+  if (uiState === "unauthorized" || uiState === "error") {
     return (
       <ProtectedRoute>
         <SessionStatePanel
@@ -144,10 +145,17 @@ export default function WhiteboardSessionPage() {
         }}
       >
         <AppShell>
-          <Whiteboard
-            sessionId={sessionState.sessionId}
-            userId={sessionState.userId}
-          />
+          <div className="relative h-full w-full">
+            {uiState === "loading" ? (
+              <div className="absolute right-4 top-4 z-20">
+                <InlineLoader label="Syncing session..." />
+              </div>
+            ) : null}
+            <Whiteboard
+              sessionId={sessionState.sessionId}
+              userId={sessionState.userId}
+            />
+          </div>
         </AppShell>
       </SessionProvider>
     </ProtectedRoute>

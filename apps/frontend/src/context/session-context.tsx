@@ -43,13 +43,14 @@ export function SessionProvider({
   children: ReactNode
   initialState: SessionState
 }) {
-  const [mode, setModeState] = useState(initialState.mode)
+  const [modeOverride, setModeOverride] = useState<ModeType | null>(null)
   const [modeStartedAt, setModeStartedAt] = useState(
     initialState.modeStartedAt,
   )
+  const mode = modeOverride ?? initialState.mode
 
   const setMode = (newMode: ModeType) => {
-    setModeState(newMode)
+    setModeOverride(newMode)
     setModeStartedAt(Date.now())
   }
 

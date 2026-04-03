@@ -49,7 +49,7 @@ Frontend:
 
 ```bash
 cd apps/frontend
-npm run dev
+pnpm dev
 ```
 
 ## Available Apps
@@ -63,7 +63,7 @@ Frontend lint:
 
 ```bash
 cd apps/frontend
-npm run lint
+pnpm lint
 ```
 
 Backend typecheck:
@@ -87,3 +87,4 @@ pnpm prisma:status
 - There is currently no committed CI workflow in this repo.
 - The root README should stay aligned with checked-in code, not future plans.
 - For Supabase connection strings, percent-encode special password characters and prefer a separate `DIRECT_URL` for Prisma CLI workflows.
+- The backend now expects Supabase auth verification variables too, using `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY` or the matching `NEXT_PUBLIC_*` fallbacks.
