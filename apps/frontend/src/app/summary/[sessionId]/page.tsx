@@ -1,19 +1,21 @@
 "use client"
 
-import { AppShell } from "@/components/layout/AppShell"
-import { SessionProvider, type RoleType } from "@/context/session-context"
-import { useEffect, useState } from "react"
-import { useParams, useRouter } from "next/navigation"
-import { getStoredSession } from "@/lib/session-storage"
-import { ProtectedRoute } from "@/components/ProtectedRoute"
-import { SessionStatePanel } from "@/components/ui/SessionStatePanel"
+import { useEffect, useMemo, useState } from "react"
+import { Download } from "lucide-react"
+import { SessionRoute } from "@/components/session/SessionRoute"
+import { SessionUtilityPanel } from "@/components/layout/SessionUtilityPanel"
+import { Button } from "@/components/ui/Button"
+import { EmptyState } from "@/components/ui/EmptyState"
 import { InlineLoader } from "@/components/ui/InlineLoader"
-import {
-  fetchSessionDetails,
-} from "@/lib/session-api"
+import { PageHeader } from "@/components/ui/PageHeader"
+import { SectionCard } from "@/components/ui/SectionCard"
+import { StatCard } from "@/components/ui/StatCard"
 import { apiFetch } from "@/lib/api"
-import { getSessionUiMessage, resolveSessionUiState } from "@/lib/session-ui"
-import type { SessionDetails, SessionMetrics, SessionUIState } from "@/types/session"
+import { resolveSessionUiState } from "@/lib/session-ui"
+import type {
+  SessionMetrics,
+  SessionRouteContext,
+} from "@/types/session"
 
 type TransitionDto = {
   timestamp: string
@@ -29,258 +31,6 @@ function emptyMetrics(): SessionMetrics {
     dominanceRatio: 0,
     perUser: [],
   }
-}
-
-export default function SessionSummaryPage() {
-  const router = useRouter()
-  const params = useParams<{ sessionId: string }>()
-  const [sessionInfo] = useState<null | {
-    sessionId: string
-    userId: string
-    role: RoleType
-    displayName: string
-    sessionName: string
-  }>(() => getStoredSession())
-  const [sessionDetails, setSessionDetails] = useState<SessionDetails | null>(null)
-  const [metrics, setMetrics] = useState<SessionMetrics | null>(null)
-  const [modeBreakdown, setModeBreakdown] = useState<
-    { mode: string; durationMinutes: number }[]
-  >([])
-  const [loadedAt] = useState(() => Date.now())
-  const [uiState, setUiState] = useState<SessionUIState>("loading")
-  const [uiMessage, setUiMessage] = useState<string | undefined>(undefined)
-
-  useEffect(() => {
-    if (!sessionInfo || sessionInfo.sessionId !== params.sessionId) {
-      router.replace("/sessions")
-    }
-  }, [params.sessionId, router, sessionInfo])
-
-  useEffect(() => {
-    if (!sessionInfo || sessionInfo.sessionId !== params.sessionId) return
-
-    let cancelled = false
-
-    const loadSession = async () => {
-      try {
-        const details = await fetchSessionDetails(sessionInfo.sessionId)
-        if (!cancelled) {
-          setSessionDetails(details)
-          setUiState("ready")
-          setUiMessage(undefined)
-        }
-      } catch (error) {
-        if (!cancelled) {
-          setUiState(resolveSessionUiState(error))
-          setUiMessage(
-            getSessionUiMessage(
-              error,
-              "Unable to load session context for this summary.",
-            ),
-          )
-        }
-      }
-    }
-
-    const loadMetrics = async () => {
-      try {
-        const res = await apiFetch(`${API_URL}/api/metrics/${sessionInfo.sessionId}`)
-
-        if (res.status === 404) {
-          if (!cancelled) {
-            setMetrics(emptyMetrics())
-          }
-          return
-        }
-
-        if (!res.ok) {
-          throw new Error("Failed to load summary metrics")
-        }
-
-        const data = await res.json()
-        if (cancelled) return
-
-        setMetrics(data.data)
-
-        const transitionsRes = await apiFetch(
-          `${API_URL}/api/metrics/${sessionInfo.sessionId}/mode-transitions`,
-        )
-
-        if (!transitionsRes.ok) return
-
-        const transitionsData = await transitionsRes.json()
-        const transitions = transitionsData.data as TransitionDto[]
-
-        if (!transitions.length || cancelled) return
-
-        setModeBreakdown(computeModeDurations(transitions))
-      } catch (error) {
-        if (!cancelled) {
-          if (resolveSessionUiState(error) === "unauthorized") {
-            setUiState("unauthorized")
-            setUiMessage(
-              getSessionUiMessage(
-                error,
-                "Your auth session expired while loading summary analytics.",
-              ),
-            )
-            return
-          }
-          setMetrics(emptyMetrics())
-          setModeBreakdown([])
-        }
-      }
-    }
-
-    void loadSession()
-    void loadMetrics()
-
-    return () => {
-      cancelled = true
-    }
-  }, [params.sessionId, router, sessionInfo])
-
-  const sessionName = sessionDetails?.name ?? sessionInfo?.sessionName ?? "Whiteboard Session"
-  const mostActiveUser =
-    metrics && metrics.perUser.length > 0
-      ? metrics.perUser.reduce((left, right) =>
-          right.edits > left.edits ? right : left,
-        ).userId
-      : sessionInfo?.userId ?? "Unknown"
-
-  function exportReport(data: unknown) {
-    const blob = new Blob([JSON.stringify(data, null, 2)], {
-      type: "application/json",
-    })
-
-    const url = URL.createObjectURL(blob)
-    const anchor = document.createElement("a")
-    anchor.href = url
-    anchor.download = "session-report.json"
-    anchor.click()
-    URL.revokeObjectURL(url)
-  }
-
-  return (
-    <ProtectedRoute>
-      {!sessionInfo || sessionInfo.sessionId !== params.sessionId ? (
-        <SessionStatePanel
-          state="loading"
-          message="Validating your active session and preparing summary..."
-        />
-      ) : uiState === "unauthorized" || uiState === "error" ? (
-        <SessionStatePanel
-          state={uiState}
-          message={uiMessage}
-          actionHref={uiState === "unauthorized" ? "/auth" : "/sessions"}
-          actionLabel={uiState === "unauthorized" ? "Go to Auth" : "Back to Sessions"}
-        />
-      ) : (
-        (() => {
-          const resolvedMetrics = metrics ?? emptyMetrics()
-          const activeUsers =
-            sessionDetails?.participants.length
-              ? sessionDetails.participants.map((participant) => ({
-                  id: participant.id,
-                  name: participant.name,
-                  role: participant.role,
-                }))
-              : [
-                  {
-                    id: sessionInfo.userId,
-                    name: sessionInfo.displayName,
-                    role: sessionInfo.role,
-                  },
-                ]
-          const currentUserRole =
-            sessionDetails?.participants.find(
-              (participant) => participant.id === sessionInfo.userId,
-            )?.role ?? sessionInfo.role
-          const sessionStartTime = sessionDetails
-            ? new Date(sessionDetails.startTime).getTime()
-            : loadedAt
-
-          return (
-        <SessionProvider
-          initialState={{
-            sessionId: sessionInfo.sessionId,
-            userId: sessionInfo.userId,
-            sessionName,
-            role: currentUserRole,
-            mode: sessionDetails?.currentMode ?? "FREE",
-            dominanceRatio: resolvedMetrics.dominanceRatio,
-            activeUsers,
-            sessionStartTime,
-            modeStartedAt: loadedAt,
-          }}
-        >
-          <AppShell contentScrollable>
-            <div className="space-y-8">
-              <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-                <div>
-                <h1 className="mb-2 text-2xl font-semibold">Session Summary</h1>
-                <p className="text-sm text-zinc-400">
-                  Analytical overview of collaboration performance
-                </p>
-                </div>
-                {uiState === "loading" || !metrics ? (
-                  <InlineLoader label="Refreshing summary..." />
-                ) : null}
-              </div>
-
-              <button
-                onClick={() =>
-                  exportReport({
-                    sessionName,
-                    totalEdits: resolvedMetrics.totalEdits,
-                    participants: resolvedMetrics.activeUsers,
-                    dominanceRatio: resolvedMetrics.dominanceRatio,
-                    mostActiveUser,
-                    modes: modeBreakdown,
-                  })
-                }
-                className="rounded-md bg-blue-600 px-4 py-2 text-sm text-white"
-              >
-                Export Report
-              </button>
-
-              <div className="grid grid-cols-2 gap-6 md:grid-cols-3">
-                <SummaryCard label="Session Name" value={sessionName} />
-                <SummaryCard label="Total Edits" value={resolvedMetrics.totalEdits} />
-                <SummaryCard label="Participants" value={resolvedMetrics.activeUsers} />
-                <SummaryCard
-                  label="Dominance Ratio"
-                  value={resolvedMetrics.dominanceRatio.toFixed(2)}
-                />
-                <SummaryCard label="Most Active User" value={mostActiveUser} />
-              </div>
-
-              {modeBreakdown.length > 0 ? (
-                <div className="rounded-lg border border-zinc-800 bg-zinc-900 p-6">
-                  <h3 className="mb-4 text-lg font-semibold">Mode Distribution</h3>
-                  <ul className="space-y-2 text-sm text-zinc-300">
-                    {modeBreakdown.map((entry) => (
-                      <li key={entry.mode} className="flex justify-between">
-                        <span>{entry.mode}</span>
-                        <span>{entry.durationMinutes.toFixed(1)} min</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ) : (
-                <div className="rounded-lg border border-zinc-800 bg-zinc-900 p-6 text-sm text-zinc-400">
-                  No summary metrics yet. Draw on the board first, then revisit this
-                  page.
-                </div>
-              )}
-            </div>
-          </AppShell>
-        </SessionProvider>
-          )
-        })()
-      )}
-    </ProtectedRoute>
-  )
 }
 
 function computeModeDurations(transitions: TransitionDto[]) {
@@ -310,17 +60,236 @@ function computeModeDurations(transitions: TransitionDto[]) {
   }))
 }
 
-function SummaryCard({
-  label,
-  value,
-}: {
-  label: string
-  value: string | number
-}) {
+function resolveParticipantLabel(
+  context: SessionRouteContext,
+  userId: string,
+) {
+  const participant = context.sessionDetails?.participants.find(
+    (entry) => entry.id === userId,
+  )
+
+  if (participant?.name) {
+    return participant.name
+  }
+
+  return userId.slice(0, 8)
+}
+
+function SummaryContent({ context }: { context: SessionRouteContext }) {
+  const [metrics, setMetrics] = useState<SessionMetrics | null>(null)
+  const [modeBreakdown, setModeBreakdown] = useState<
+    { mode: string; durationMinutes: number }[]
+  >([])
+  const [isRefreshing, setIsRefreshing] = useState(true)
+  const [hasFatalPageError, setHasFatalPageError] = useState(false)
+
+  useEffect(() => {
+    let cancelled = false
+
+    const loadSummary = async () => {
+      if (!cancelled) {
+        setIsRefreshing(true)
+      }
+
+      try {
+        const metricsRes = await apiFetch(`${API_URL}/api/metrics/${context.sessionInfo.sessionId}`)
+
+        if (!cancelled) {
+          if (metricsRes.status === 404) {
+            setMetrics(emptyMetrics())
+          } else if (metricsRes.ok) {
+            const metricsPayload = await metricsRes.json()
+            setMetrics(metricsPayload.data)
+          } else {
+            setMetrics(emptyMetrics())
+          }
+
+          const transitionsRes = await apiFetch(
+            `${API_URL}/api/metrics/${context.sessionInfo.sessionId}/mode-transitions`,
+          )
+
+          if (transitionsRes.ok) {
+            const transitionsPayload = await transitionsRes.json()
+            setModeBreakdown(computeModeDurations(transitionsPayload.data))
+          } else {
+            setModeBreakdown([])
+          }
+
+          setHasFatalPageError(false)
+        }
+      } catch (error) {
+        if (!cancelled) {
+          if (resolveSessionUiState(error) === "unauthorized") {
+            setHasFatalPageError(true)
+          } else {
+            setMetrics(emptyMetrics())
+            setModeBreakdown([])
+          }
+        }
+      } finally {
+        if (!cancelled) {
+          setIsRefreshing(false)
+        }
+      }
+    }
+
+    void loadSummary()
+
+    return () => {
+      cancelled = true
+    }
+  }, [context.sessionInfo.sessionId])
+
+  const resolvedMetrics = metrics ?? emptyMetrics()
+  const mostActiveUser = useMemo(() => {
+    if (!resolvedMetrics.perUser.length) {
+      return context.sessionInfo.displayName || "Unknown"
+    }
+
+    const entry = resolvedMetrics.perUser.reduce((left, right) =>
+      right.edits > left.edits ? right : left,
+    )
+
+    return resolveParticipantLabel(context, entry.userId)
+  }, [context, resolvedMetrics.perUser])
+  const leadingMode = useMemo(() => {
+    if (!modeBreakdown.length) {
+      return null
+    }
+
+    return [...modeBreakdown].sort(
+      (left, right) => right.durationMinutes - left.durationMinutes,
+    )[0]
+  }, [modeBreakdown])
+
+  const summaryNarrative = [
+    `${context.sessionName} captured ${resolvedMetrics.totalEdits} edits across ${resolvedMetrics.activeUsers} participant${resolvedMetrics.activeUsers === 1 ? "" : "s"}.`,
+    resolvedMetrics.dominanceRatio > 0.7
+      ? "Contribution was heavily concentrated, so facilitator check-ins may help balance the next session."
+      : "Contribution stayed reasonably balanced, which is a healthy sign for collaborative discussion.",
+    modeBreakdown.length
+      ? `The group spent most of its guided time in ${leadingMode?.mode ?? "FREE"} mode.`
+      : "Mode transitions have not accumulated enough data yet to tell a clear facilitation story.",
+  ]
+
+  function exportReport() {
+    const blob = new Blob(
+      [
+        JSON.stringify(
+          {
+            sessionName: context.sessionName,
+            totalEdits: resolvedMetrics.totalEdits,
+            participants: resolvedMetrics.activeUsers,
+            dominanceRatio: resolvedMetrics.dominanceRatio,
+            mostActiveUser,
+            modes: modeBreakdown,
+          },
+          null,
+          2,
+        ),
+      ],
+      {
+        type: "application/json",
+      },
+    )
+
+    const url = URL.createObjectURL(blob)
+    const anchor = document.createElement("a")
+    anchor.href = url
+    anchor.download = "session-report.json"
+    anchor.click()
+    URL.revokeObjectURL(url)
+  }
+
+  if (hasFatalPageError) {
+    return (
+      <div className="p-4 md:p-6">
+        <EmptyState
+          title="Summary is temporarily unavailable"
+          message="Your session still exists, but this summary needs a fresh authorized reload from the session lobby."
+        />
+      </div>
+    )
+  }
+
   return (
-    <div className="rounded-lg border border-zinc-800 bg-zinc-900 p-6">
-      <p className="mb-2 text-xs text-zinc-400">{label}</p>
-      <p className="text-xl font-semibold">{value}</p>
+    <div className="space-y-6 p-4 md:p-6">
+      <PageHeader
+        eyebrow="Session Summary"
+        title="Wrap the session with a clear outcome snapshot"
+        description="Use this page to review what happened, export a lightweight report, and make it easier for the next conversation to pick up where this one ended."
+        actions={
+          <>
+            {isRefreshing ? <InlineLoader label="Refreshing summary..." /> : null}
+            <Button type="button" onClick={exportReport}>
+              <Download className="h-4 w-4" />
+              Export Report
+            </Button>
+          </>
+        }
+      />
+
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-5">
+        <StatCard label="Session" value={context.sessionName} />
+        <StatCard label="Total Edits" value={resolvedMetrics.totalEdits} />
+        <StatCard label="Participants" value={resolvedMetrics.activeUsers} />
+        <StatCard
+          label="Dominance Ratio"
+          value={resolvedMetrics.dominanceRatio.toFixed(2)}
+        />
+        <StatCard label="Most Active" value={mostActiveUser} />
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1.2fr_0.8fr]">
+        <SectionCard
+          title="Session story"
+          description="A simple narrative summary so facilitators and teams can skim what happened without reading raw analytics."
+        >
+          <div className="space-y-3 text-sm leading-7 text-[var(--color-text-secondary)]">
+            {summaryNarrative.map((line) => (
+              <p key={line}>{line}</p>
+            ))}
+          </div>
+        </SectionCard>
+
+        <SectionCard
+          title="Mode distribution"
+          description="How the session was paced across facilitation modes."
+        >
+          {modeBreakdown.length > 0 ? (
+            <div className="space-y-3">
+              {modeBreakdown.map((entry) => (
+                <div
+                  key={entry.mode}
+                  className="flex items-center justify-between rounded-2xl border border-[var(--color-border-soft)] bg-[var(--color-bg-elevated)] px-4 py-3 text-sm text-[var(--color-text-secondary)]"
+                >
+                  <span className="font-medium text-[var(--color-text-primary)]">
+                    {entry.mode}
+                  </span>
+                  <span>{entry.durationMinutes.toFixed(1)} min</span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <EmptyState
+              title="No mode breakdown yet"
+              message="Once the session records more governance transitions, this section will summarize how facilitation moved over time."
+            />
+          )}
+        </SectionCard>
+      </div>
     </div>
+  )
+}
+
+export default function SessionSummaryPage() {
+  return (
+    <SessionRoute
+      variant="insights"
+      contentScrollable
+      utilityPanel={<SessionUtilityPanel />}
+    >
+      {(context) => <SummaryContent context={context} />}
+    </SessionRoute>
   )
 }

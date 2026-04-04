@@ -1,4 +1,5 @@
 import type { ModeType, RoleType } from "@/context/session-context"
+import type { StoredSession } from "@/lib/session-storage"
 
 export type SessionUIState =
   | "loading"
@@ -45,4 +46,19 @@ export interface TimelinePoint {
 export interface ModeTransitionPoint {
   timestamp: string
   mode: ModeType
+}
+
+export interface SessionRouteContext {
+  sessionInfo: StoredSession
+  sessionDetails: SessionDetails | null
+  sessionName: string
+  currentUserRole: RoleType
+  activeUsers: {
+    id: string
+    name: string
+    role: RoleType
+  }[]
+  sessionStartTime: number
+  modeStartedAt: number
+  isSessionRefreshing: boolean
 }
