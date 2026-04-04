@@ -30,7 +30,12 @@ export function AnalyticsChartCard({
             {description}
           </p>
         </div>
-        <Button variant="secondary" onClick={onToggle}>
+        <Button
+          variant="secondary"
+          onClick={onToggle}
+          aria-expanded={expanded}
+          aria-label={`${expanded ? "Collapse" : "Expand"} ${title}`}
+        >
           {expanded ? "Collapse" : "Expand"}
         </Button>
       </div>

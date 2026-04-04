@@ -2,84 +2,41 @@
 
 import { useEffect, useMemo, useState } from "react"
 import { Download } from "lucide-react"
-import { SessionRoute } from "@/components/session/SessionRoute"
+import { ActivityTimeline } from "@/components/analytics/ActivityTimeline"
+import { AnalyticsChartCard } from "@/components/analytics/AnalyticsChartCard"
+import { ContributionDominanceChart } from "@/components/analytics/ContributionDominanceChart"
+import type { ModeTransition } from "@/components/analytics/ActivityTimeline"
+import { ParticipationBreakdown } from "@/components/analytics/ParticipationBreakdown"
 import { SessionUtilityPanel } from "@/components/layout/SessionUtilityPanel"
+import { SessionRoute } from "@/components/session/SessionRoute"
 import { Button } from "@/components/ui/Button"
 import { EmptyState } from "@/components/ui/EmptyState"
 import { InlineLoader } from "@/components/ui/InlineLoader"
 import { PageHeader } from "@/components/ui/PageHeader"
-import { SectionCard } from "@/components/ui/SectionCard"
-import { StatCard } from "@/components/ui/StatCard"
 import { apiFetch } from "@/lib/api"
 import { resolveSessionUiState } from "@/lib/session-ui"
+import {
+  emptyMetrics,
+  resolveParticipantLabel,
+  type TransitionDto,
+} from "@/lib/session-analytics"
 import type {
   SessionMetrics,
   SessionRouteContext,
+  TimelinePoint,
 } from "@/types/session"
-
-type TransitionDto = {
-  timestamp: string
-  mode: string
-}
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000"
 
-function emptyMetrics(): SessionMetrics {
-  return {
-    totalEdits: 0,
-    activeUsers: 1,
-    dominanceRatio: 0,
-    perUser: [],
-  }
-}
-
-function computeModeDurations(transitions: TransitionDto[]) {
-  const sorted = [...transitions].sort(
-    (left, right) =>
-      new Date(left.timestamp).getTime() - new Date(right.timestamp).getTime(),
-  )
-
-  const durations = new Map<string, number>()
-
-  for (let index = 0; index < sorted.length; index += 1) {
-    const current = sorted[index]
-    const next = sorted[index + 1]
-
-    const start = new Date(current.timestamp).getTime()
-    const end = next ? new Date(next.timestamp).getTime() : Date.now()
-
-    const deltaMs = Math.max(0, end - start)
-    const existing = durations.get(current.mode) ?? 0
-
-    durations.set(current.mode, existing + deltaMs)
-  }
-
-  return Array.from(durations.entries()).map(([mode, totalMs]) => ({
-    mode,
-    durationMinutes: totalMs / 60000,
-  }))
-}
-
-function resolveParticipantLabel(
-  context: SessionRouteContext,
-  userId: string,
-) {
-  const participant = context.sessionDetails?.participants.find(
-    (entry) => entry.id === userId,
-  )
-
-  if (participant?.name) {
-    return participant.name
-  }
-
-  return userId.slice(0, 8)
-}
-
 function SummaryContent({ context }: { context: SessionRouteContext }) {
   const [metrics, setMetrics] = useState<SessionMetrics | null>(null)
-  const [modeBreakdown, setModeBreakdown] = useState<
-    { mode: string; durationMinutes: number }[]
-  >([])
+  const [timeline, setTimeline] = useState<TimelinePoint[]>([])
+  const [modeTransitions, setModeTransitions] = useState<ModeTransition[]>([])
+  const [expandedCharts, setExpandedCharts] = useState({
+    timeline: true,
+    breakdown: true,
+    dominance: true,
+  })
   const [isRefreshing, setIsRefreshing] = useState(true)
   const [hasFatalPageError, setHasFatalPageError] = useState(false)
 
@@ -92,7 +49,13 @@ function SummaryContent({ context }: { context: SessionRouteContext }) {
       }
 
       try {
-        const metricsRes = await apiFetch(`${API_URL}/api/metrics/${context.sessionInfo.sessionId}`)
+        const [metricsRes, timelineRes, transitionsRes] = await Promise.all([
+          apiFetch(`${API_URL}/api/metrics/${context.sessionInfo.sessionId}`),
+          apiFetch(`${API_URL}/api/metrics/${context.sessionInfo.sessionId}/timeline`),
+          apiFetch(
+            `${API_URL}/api/metrics/${context.sessionInfo.sessionId}/mode-transitions`,
+          ),
+        ])
 
         if (!cancelled) {
           if (metricsRes.status === 404) {
@@ -104,15 +67,26 @@ function SummaryContent({ context }: { context: SessionRouteContext }) {
             setMetrics(emptyMetrics())
           }
 
-          const transitionsRes = await apiFetch(
-            `${API_URL}/api/metrics/${context.sessionInfo.sessionId}/mode-transitions`,
-          )
+          if (timelineRes.ok) {
+            const timelinePayload = await timelineRes.json()
+            setTimeline(timelinePayload.data)
+          } else {
+            setTimeline([])
+          }
 
           if (transitionsRes.ok) {
             const transitionsPayload = await transitionsRes.json()
-            setModeBreakdown(computeModeDurations(transitionsPayload.data))
+            setModeTransitions(
+              (transitionsPayload.data as TransitionDto[]).map((transition) => ({
+                time: new Date(transition.timestamp).toLocaleTimeString([], {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                }),
+                mode: transition.mode as "FREE" | "DECISION" | "LOCKED",
+              })),
+            )
           } else {
-            setModeBreakdown([])
+            setModeTransitions([])
           }
 
           setHasFatalPageError(false)
@@ -123,7 +97,8 @@ function SummaryContent({ context }: { context: SessionRouteContext }) {
             setHasFatalPageError(true)
           } else {
             setMetrics(emptyMetrics())
-            setModeBreakdown([])
+            setTimeline([])
+            setModeTransitions([])
           }
         }
       } finally {
@@ -141,36 +116,25 @@ function SummaryContent({ context }: { context: SessionRouteContext }) {
   }, [context.sessionInfo.sessionId])
 
   const resolvedMetrics = metrics ?? emptyMetrics()
-  const mostActiveUser = useMemo(() => {
-    if (!resolvedMetrics.perUser.length) {
-      return context.sessionInfo.displayName || "Unknown"
-    }
-
-    const entry = resolvedMetrics.perUser.reduce((left, right) =>
-      right.edits > left.edits ? right : left,
+  const participationData = useMemo(
+    () =>
+      resolvedMetrics.perUser.map((entry) => ({
+        ...entry,
+        userId: resolveParticipantLabel(context, entry.userId),
+      })),
+    [context, resolvedMetrics.perUser],
+  )
+  const dominanceData = useMemo(() => {
+    const total = resolvedMetrics.perUser.reduce(
+      (sum, entry) => sum + entry.edits,
+      0,
     )
 
-    return resolveParticipantLabel(context, entry.userId)
+    return resolvedMetrics.perUser.map((entry) => ({
+      user: resolveParticipantLabel(context, entry.userId),
+      dominance: total > 0 ? (entry.edits / total) * 100 : 0,
+    }))
   }, [context, resolvedMetrics.perUser])
-  const leadingMode = useMemo(() => {
-    if (!modeBreakdown.length) {
-      return null
-    }
-
-    return [...modeBreakdown].sort(
-      (left, right) => right.durationMinutes - left.durationMinutes,
-    )[0]
-  }, [modeBreakdown])
-
-  const summaryNarrative = [
-    `${context.sessionName} captured ${resolvedMetrics.totalEdits} edits across ${resolvedMetrics.activeUsers} participant${resolvedMetrics.activeUsers === 1 ? "" : "s"}.`,
-    resolvedMetrics.dominanceRatio > 0.7
-      ? "Contribution was heavily concentrated, so facilitator check-ins may help balance the next session."
-      : "Contribution stayed reasonably balanced, which is a healthy sign for collaborative discussion.",
-    modeBreakdown.length
-      ? `The group spent most of its guided time in ${leadingMode?.mode ?? "FREE"} mode.`
-      : "Mode transitions have not accumulated enough data yet to tell a clear facilitation story.",
-  ]
 
   function exportReport() {
     const blob = new Blob(
@@ -181,8 +145,10 @@ function SummaryContent({ context }: { context: SessionRouteContext }) {
             totalEdits: resolvedMetrics.totalEdits,
             participants: resolvedMetrics.activeUsers,
             dominanceRatio: resolvedMetrics.dominanceRatio,
-            mostActiveUser,
-            modes: modeBreakdown,
+            charts: {
+              timeline,
+              contributions: resolvedMetrics.perUser,
+            },
           },
           null,
           2,
@@ -212,12 +178,19 @@ function SummaryContent({ context }: { context: SessionRouteContext }) {
     )
   }
 
+  const toggleChart = (key: "timeline" | "breakdown" | "dominance") => {
+    setExpandedCharts((previous) => ({
+      ...previous,
+      [key]: !previous[key],
+    }))
+  }
+
   return (
     <div className="space-y-6 p-4 md:p-6">
       <PageHeader
         eyebrow="Session Summary"
-        title="Wrap the session with a clear outcome snapshot"
-        description="Use this page to review what happened, export a lightweight report, and make it easier for the next conversation to pick up where this one ended."
+        title="Export and review the detailed session charts"
+        description="The summary view now focuses on detailed chart exploration, while analytics holds the compact session snapshot."
         actions={
           <>
             {isRefreshing ? <InlineLoader label="Refreshing summary..." /> : null}
@@ -229,54 +202,73 @@ function SummaryContent({ context }: { context: SessionRouteContext }) {
         }
       />
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-5">
-        <StatCard label="Session" value={context.sessionName} />
-        <StatCard label="Total Edits" value={resolvedMetrics.totalEdits} />
-        <StatCard label="Participants" value={resolvedMetrics.activeUsers} />
-        <StatCard
-          label="Dominance Ratio"
-          value={resolvedMetrics.dominanceRatio.toFixed(2)}
-        />
-        <StatCard label="Most Active" value={mostActiveUser} />
-      </div>
-
-      <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1.2fr_0.8fr]">
-        <SectionCard
-          title="Session story"
-          description="A simple narrative summary so facilitators and teams can skim what happened without reading raw analytics."
+      <div className="grid grid-cols-1 gap-4">
+        <AnalyticsChartCard
+          title="Activity Timeline"
+          description="Track how whiteboard activity rises and dips throughout the session."
+          expanded={expandedCharts.timeline}
+          onToggle={() => toggleChart("timeline")}
         >
-          <div className="space-y-3 text-sm leading-7 text-[var(--color-text-secondary)]">
-            {summaryNarrative.map((line) => (
-              <p key={line}>{line}</p>
-            ))}
-          </div>
-        </SectionCard>
-
-        <SectionCard
-          title="Mode distribution"
-          description="How the session was paced across facilitation modes."
-        >
-          {modeBreakdown.length > 0 ? (
-            <div className="space-y-3">
-              {modeBreakdown.map((entry) => (
-                <div
-                  key={entry.mode}
-                  className="flex items-center justify-between rounded-2xl border border-[var(--color-border-soft)] bg-[var(--color-bg-elevated)] px-4 py-3 text-sm text-[var(--color-text-secondary)]"
-                >
-                  <span className="font-medium text-[var(--color-text-primary)]">
-                    {entry.mode}
-                  </span>
-                  <span>{entry.durationMinutes.toFixed(1)} min</span>
-                </div>
-              ))}
-            </div>
+          {timeline.length > 0 ? (
+            <ActivityTimeline
+              chrome="plain"
+              data={timeline.map((point) => ({
+                time: new Date(point.timestamp).toLocaleTimeString([], {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                }),
+                edits: point.edits,
+              }))}
+              transitions={modeTransitions}
+              height={320}
+            />
           ) : (
             <EmptyState
-              title="No mode breakdown yet"
-              message="Once the session records more governance transitions, this section will summarize how facilitation moved over time."
+              title="No timeline yet"
+              message="Start drawing or collaborating on the board and the activity timeline will fill in here."
             />
           )}
-        </SectionCard>
+        </AnalyticsChartCard>
+
+        <AnalyticsChartCard
+          title="Participation Breakdown"
+          description="See how much each person contributed during the session."
+          expanded={expandedCharts.breakdown}
+          onToggle={() => toggleChart("breakdown")}
+        >
+          {participationData.length > 0 ? (
+            <ParticipationBreakdown
+              chrome="plain"
+              data={participationData}
+              height={320}
+            />
+          ) : (
+            <EmptyState
+              title="No contribution data yet"
+              message="Once the board has edits from participants, this chart will show contribution spread."
+            />
+          )}
+        </AnalyticsChartCard>
+
+        <AnalyticsChartCard
+          title="Contribution Dominance"
+          description="A horizontal view of how strongly each participant dominated total board activity. This uses edit-share as the dominance signal."
+          expanded={expandedCharts.dominance}
+          onToggle={() => toggleChart("dominance")}
+        >
+          {dominanceData.length > 0 ? (
+            <ContributionDominanceChart
+              chrome="plain"
+              data={dominanceData}
+              height={340}
+            />
+          ) : (
+            <EmptyState
+              title="No dominance data yet"
+              message="Once contribution data exists, this chart will visualize each user's share of overall board activity."
+            />
+          )}
+        </AnalyticsChartCard>
       </div>
     </div>
   )

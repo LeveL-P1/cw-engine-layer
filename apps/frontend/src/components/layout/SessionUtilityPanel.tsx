@@ -8,7 +8,6 @@ import { Badge } from "@/components/ui/Badge"
 import { Button } from "@/components/ui/Button"
 import { Divider } from "@/components/ui/Divider"
 import { SurfaceCard } from "@/components/ui/SurfaceCard"
-import { ModeControlPanel } from "@/components/governance/ModeControlPanel"
 
 export function SessionUtilityPanel() {
   const { role, mode, sessionId, activeUsers, sessionStartTime } = useSession()
@@ -49,7 +48,6 @@ export function SessionUtilityPanel() {
             <Share2 className="h-4 w-4" />
             {inviteCopied ? "Invite Copied" : "Copy Invite Link"}
           </Button>
-          <ModeControlPanel />
         </div>
       </SurfaceCard>
 

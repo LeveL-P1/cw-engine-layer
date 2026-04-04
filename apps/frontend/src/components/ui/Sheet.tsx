@@ -1,6 +1,7 @@
 "use client"
 
 import type { ReactNode } from "react"
+import { useEffect } from "react"
 import clsx from "clsx"
 
 interface SheetProps {
@@ -18,6 +19,27 @@ export function Sheet({
   side = "left",
   children,
 }: SheetProps) {
+  useEffect(() => {
+    if (!open) {
+      return
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        onClose()
+      }
+    }
+
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = "hidden"
+    window.addEventListener("keydown", handleKeyDown)
+
+    return () => {
+      document.body.style.overflow = previousOverflow
+      window.removeEventListener("keydown", handleKeyDown)
+    }
+  }, [onClose, open])
+
   return (
     <div
       className={clsx(
@@ -36,6 +58,9 @@ export function Sheet({
         )}
       />
       <aside
+        role="dialog"
+        aria-modal="true"
+        aria-label={title ?? "Panel"}
         className={clsx(
           "absolute top-0 h-full w-[min(88vw,22rem)] border-[var(--color-border-soft)] bg-[var(--color-bg-surface)] p-5 shadow-[var(--shadow-panel)] backdrop-blur transition-transform",
           side === "left" ? "left-0 border-r" : "right-0 border-l",

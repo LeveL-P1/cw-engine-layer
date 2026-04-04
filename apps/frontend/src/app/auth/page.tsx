@@ -89,37 +89,32 @@ export default function AuthPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(15,118,110,0.16),transparent_30%),linear-gradient(180deg,var(--color-bg-canvas)_0%,var(--color-bg-app)_100%)] px-4 py-10 text-[var(--color-text-primary)]">
-      <div className="mx-auto flex min-h-[calc(100vh-5rem)] max-w-5xl items-center justify-center">
-        <SurfaceCard className="grid w-full overflow-hidden md:grid-cols-[1.1fr_0.9fr]">
-          <div className="flex flex-col justify-between bg-[radial-gradient(circle_at_top_left,rgba(15,118,110,0.16),transparent_40%),linear-gradient(180deg,var(--color-bg-strong),#10203a)] p-8 text-white md:p-10">
+    <div className="min-h-screen px-4 py-10 text-[var(--color-text-primary)]">
+      <div className="mx-auto flex min-h-[calc(100vh-5rem)] max-w-3xl items-center justify-center">
+        <SurfaceCard className="grid w-full overflow-hidden md:grid-cols-[0.92fr_1.08fr]">
+          <div className="flex flex-col justify-center bg-[radial-gradient(circle_at_top_left,rgba(15,118,110,0.16),transparent_40%),linear-gradient(180deg,var(--color-bg-strong),#10203a)] p-7 text-white md:p-8">
             <div className="space-y-4">
-              <p className="text-sm uppercase tracking-[0.35em] text-teal-200">
+              <p className="text-sm uppercase tracking-[0.3em] text-teal-200">
                 Whiteboard First
               </p>
-              <h1 className="max-w-md text-4xl font-semibold leading-tight">
-                Sign in to a collaborative board that stays fast during the session.
+              <h1 className="max-w-sm text-3xl font-semibold leading-tight">
+                Sign in and get to the board fast.
               </h1>
-              <p className="max-w-md text-sm leading-6 text-slate-200/85">
-                Start with the board, add structure when it helps, and review
-                analytics after the work is done. That is the product rhythm.
+              <p className="max-w-sm text-sm leading-6 text-slate-200/85">
+                Authenticate once, then create or join a session without extra friction.
               </p>
-            </div>
-
-            <div className="space-y-3 text-sm text-slate-200/85">
-              <p>Current app flow:</p>
-              <p>/ -&gt; /auth -&gt; /sessions -&gt; /whiteboard/[sessionId] -&gt; /dashboard/[sessionId] -&gt; /summary/[sessionId]</p>
             </div>
           </div>
 
-          <div className="p-8 md:p-10">
-            <div className="mb-6 flex rounded-2xl bg-[var(--color-bg-elevated)] p-1">
+          <div className="p-7 md:p-8">
+            <div className="mb-6 flex items-center gap-2">
               <Button
                 type="button"
+                size="sm"
                 onClick={() => {
                   router.replace("/auth?mode=signin")
                 }}
-                className={`flex-1 rounded-lg px-4 py-2 text-sm font-medium transition ${
+                className={`min-w-[6.6rem] rounded-lg ${
                   mode === "signin"
                     ? "bg-[var(--color-accent)] text-white"
                     : "text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]"
@@ -129,10 +124,11 @@ export default function AuthPage() {
               </Button>
               <Button
                 type="button"
+                size="sm"
                 onClick={() => {
                   router.replace("/auth?mode=signup")
                 }}
-                className={`flex-1 rounded-lg px-4 py-2 text-sm font-medium transition ${
+                className={`min-w-[6.6rem] rounded-lg ${
                   mode === "signup"
                     ? "bg-[var(--color-accent)] text-white"
                     : "text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]"
@@ -146,11 +142,6 @@ export default function AuthPage() {
               <h2 className="text-2xl font-semibold">
                 {mode === "signin" ? "Welcome back" : "Create your account"}
               </h2>
-              <p className="mt-2 text-sm text-[var(--color-text-muted)]">
-                {mode === "signin"
-                  ? "Sign in to reach your session lobby."
-                  : "Register first, then continue through email verification."}
-              </p>
             </div>
 
             {error ? (

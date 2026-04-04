@@ -1,81 +1,43 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
-import { AnalyticsChartCard } from "@/components/analytics/AnalyticsChartCard"
-import { ActivityTimeline } from "@/components/analytics/ActivityTimeline"
-import type { ModeTransition } from "@/components/analytics/ActivityTimeline"
-import { ParticipationBreakdown } from "@/components/analytics/ParticipationBreakdown"
 import { SessionUtilityPanel } from "@/components/layout/SessionUtilityPanel"
 import { SessionRoute } from "@/components/session/SessionRoute"
 import { EmptyState } from "@/components/ui/EmptyState"
 import { InlineLoader } from "@/components/ui/InlineLoader"
 import { PageHeader } from "@/components/ui/PageHeader"
+import { SectionCard } from "@/components/ui/SectionCard"
 import { StatCard } from "@/components/ui/StatCard"
 import { apiFetch } from "@/lib/api"
 import { resolveSessionUiState } from "@/lib/session-ui"
-import type {
-  SessionMetrics,
-  SessionRouteContext,
-  TimelinePoint,
-} from "@/types/session"
-
-type TransitionDto = {
-  timestamp: string
-  mode: string
-}
+import {
+  computeModeDurations,
+  emptyMetrics,
+  resolveParticipantLabel,
+  type TransitionDto,
+} from "@/lib/session-analytics"
+import type { SessionMetrics, SessionRouteContext } from "@/types/session"
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000"
 
-function emptyMetrics(): SessionMetrics {
-  return {
-    totalEdits: 0,
-    activeUsers: 1,
-    dominanceRatio: 0,
-    perUser: [],
-  }
-}
-
-function resolveParticipantLabel(
-  context: SessionRouteContext,
-  userId: string,
-) {
-  const participant = context.sessionDetails?.participants.find(
-    (entry) => entry.id === userId,
-  )
-
-  if (participant?.name) {
-    return participant.name
-  }
-
-  return userId.slice(0, 8)
-}
-
 function DashboardContent({ context }: { context: SessionRouteContext }) {
   const [metrics, setMetrics] = useState<SessionMetrics | null>(null)
-  const [timeline, setTimeline] = useState<TimelinePoint[]>([])
-  const [modeTransitions, setModeTransitions] = useState<ModeTransition[]>([])
-  const [expandedChart, setExpandedChart] = useState<"timeline" | "breakdown">(
-    "timeline",
-  )
+  const [modeBreakdown, setModeBreakdown] = useState<
+    { mode: string; durationMinutes: number }[]
+  >([])
   const [isRefreshing, setIsRefreshing] = useState(true)
   const [hasFatalPageError, setHasFatalPageError] = useState(false)
 
   useEffect(() => {
     let cancelled = false
 
-    const loadAnalytics = async () => {
+    const loadDashboard = async () => {
       if (!cancelled) {
         setIsRefreshing(true)
       }
 
       try {
-        const [metricsRes, timelineRes, transitionsRes] = await Promise.all([
-          apiFetch(`${API_URL}/api/metrics/${context.sessionInfo.sessionId}`),
-          apiFetch(`${API_URL}/api/metrics/${context.sessionInfo.sessionId}/timeline`),
-          apiFetch(
-            `${API_URL}/api/metrics/${context.sessionInfo.sessionId}/mode-transitions`,
-          ),
-        ])
+        const metricsRes = await apiFetch(`${API_URL}/api/metrics/${context.sessionInfo.sessionId}`)
 
         if (!cancelled) {
           if (metricsRes.status === 404) {
@@ -87,26 +49,17 @@ function DashboardContent({ context }: { context: SessionRouteContext }) {
             setMetrics(emptyMetrics())
           }
 
-          if (timelineRes.ok) {
-            const timelinePayload = await timelineRes.json()
-            setTimeline(timelinePayload.data)
-          } else {
-            setTimeline([])
-          }
+          const transitionsRes = await apiFetch(
+            `${API_URL}/api/metrics/${context.sessionInfo.sessionId}/mode-transitions`,
+          )
 
           if (transitionsRes.ok) {
             const transitionsPayload = await transitionsRes.json()
-            setModeTransitions(
-              (transitionsPayload.data as TransitionDto[]).map((transition) => ({
-                time: new Date(transition.timestamp).toLocaleTimeString([], {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                }),
-                mode: transition.mode as "FREE" | "DECISION" | "LOCKED",
-              })),
+            setModeBreakdown(
+              computeModeDurations(transitionsPayload.data as TransitionDto[]),
             )
           } else {
-            setModeTransitions([])
+            setModeBreakdown([])
           }
 
           setHasFatalPageError(false)
@@ -117,8 +70,7 @@ function DashboardContent({ context }: { context: SessionRouteContext }) {
             setHasFatalPageError(true)
           } else {
             setMetrics(emptyMetrics())
-            setTimeline([])
-            setModeTransitions([])
+            setModeBreakdown([])
           }
         }
       } finally {
@@ -128,26 +80,45 @@ function DashboardContent({ context }: { context: SessionRouteContext }) {
       }
     }
 
-    void loadAnalytics()
-    const interval = window.setInterval(() => {
-      void loadAnalytics()
-    }, 5000)
+    void loadDashboard()
 
     return () => {
       cancelled = true
-      window.clearInterval(interval)
     }
   }, [context.sessionInfo.sessionId])
 
   const resolvedMetrics = metrics ?? emptyMetrics()
-  const participationData = useMemo(
-    () =>
-      resolvedMetrics.perUser.map((entry) => ({
-        ...entry,
-        userId: resolveParticipantLabel(context, entry.userId),
-      })),
-    [context, resolvedMetrics.perUser],
-  )
+  const mostActiveUser = useMemo(() => {
+    if (!resolvedMetrics.perUser.length) {
+      return context.sessionInfo.displayName || "Unknown"
+    }
+
+    const entry = resolvedMetrics.perUser.reduce((left, right) =>
+      right.edits > left.edits ? right : left,
+    )
+
+    return resolveParticipantLabel(context, entry.userId)
+  }, [context, resolvedMetrics.perUser])
+
+  const leadingMode = useMemo(() => {
+    if (!modeBreakdown.length) {
+      return null
+    }
+
+    return [...modeBreakdown].sort(
+      (left, right) => right.durationMinutes - left.durationMinutes,
+    )[0]
+  }, [modeBreakdown])
+
+  const summaryNarrative = [
+    `${context.sessionName} captured ${resolvedMetrics.totalEdits} edits across ${resolvedMetrics.activeUsers} participant${resolvedMetrics.activeUsers === 1 ? "" : "s"}.`,
+    resolvedMetrics.dominanceRatio > 0.7
+      ? "Contribution was heavily concentrated, so facilitator check-ins may help balance the next session."
+      : "Contribution stayed reasonably balanced, which is a healthy sign for collaborative discussion.",
+    modeBreakdown.length
+      ? `The group spent most of its guided time in ${leadingMode?.mode ?? "FREE"} mode.`
+      : "Mode transitions have not accumulated enough data yet to tell a clear facilitation story.",
+  ]
 
   if (hasFatalPageError) {
     return (
@@ -164,76 +135,59 @@ function DashboardContent({ context }: { context: SessionRouteContext }) {
     <div className="space-y-6 p-4 md:p-6">
       <PageHeader
         eyebrow="Session Analytics"
-        title="Track participation without interrupting the board"
-        description="Review activity patterns, contribution balance, and collaboration signals while keeping the whiteboard as the main place work happens."
+        title="Read the session without leaving the main workflow"
+        description="This page now focuses on the session snapshot and collaboration summary, while detailed charts live in the summary view."
         actions={isRefreshing ? <InlineLoader label="Refreshing analytics..." /> : null}
       />
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-        <StatCard
-          label="Total Edits"
-          value={resolvedMetrics.totalEdits}
-          helper="The total number of recorded whiteboard changes in this session."
-        />
-        <StatCard
-          label="Active People"
-          value={resolvedMetrics.activeUsers}
-          helper="Participants who have joined or contributed during the current session."
-        />
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-5">
+        <StatCard label="Session" value={context.sessionName} />
+        <StatCard label="Total Edits" value={resolvedMetrics.totalEdits} />
+        <StatCard label="Participants" value={resolvedMetrics.activeUsers} />
         <StatCard
           label="Dominance Ratio"
           value={resolvedMetrics.dominanceRatio.toFixed(2)}
-          helper="Higher numbers can signal that one person is driving most of the board activity."
         />
+        <StatCard label="Most Active" value={mostActiveUser} />
       </div>
 
-      <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-        <AnalyticsChartCard
-          title="Activity Timeline"
-          description="See how editing activity rises and dips as the session evolves."
-          expanded={expandedChart === "timeline"}
-          onToggle={() => setExpandedChart("timeline")}
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1.2fr_0.8fr]">
+        <SectionCard
+          title="Session story"
+          description="A simple narrative summary so facilitators and teams can skim what happened without digging into charts first."
         >
-          {timeline.length > 0 ? (
-            <ActivityTimeline
-              chrome="plain"
-              data={timeline.map((point) => ({
-                time: new Date(point.timestamp).toLocaleTimeString([], {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                }),
-                edits: point.edits,
-              }))}
-              transitions={modeTransitions}
-              height={320}
-            />
-          ) : (
-            <EmptyState
-              title="No timeline yet"
-              message="Start drawing or collaborating on the board and the activity timeline will fill in here."
-            />
-          )}
-        </AnalyticsChartCard>
+          <div className="space-y-3 text-sm leading-7 text-[var(--color-text-secondary)]">
+            {summaryNarrative.map((line) => (
+              <p key={line}>{line}</p>
+            ))}
+          </div>
+        </SectionCard>
 
-        <AnalyticsChartCard
-          title="Participation Breakdown"
-          description="Compare how much each person contributed, especially useful for classes, interviews, and facilitated workshops."
-          expanded={expandedChart === "breakdown"}
-          onToggle={() => setExpandedChart("breakdown")}
+        <SectionCard
+          title="Mode distribution"
+          description="How the session was paced across facilitation modes."
         >
-          {participationData.length > 0 ? (
-            <ParticipationBreakdown
-              chrome="plain"
-              data={participationData}
-              height={320}
-            />
+          {modeBreakdown.length > 0 ? (
+            <div className="space-y-3">
+              {modeBreakdown.map((entry) => (
+                <div
+                  key={entry.mode}
+                  className="flex items-center justify-between rounded-2xl border border-[var(--color-border-soft)] bg-[var(--color-bg-elevated)] px-4 py-3 text-sm text-[var(--color-text-secondary)]"
+                >
+                  <span className="font-medium text-[var(--color-text-primary)]">
+                    {entry.mode}
+                  </span>
+                  <span>{entry.durationMinutes.toFixed(1)} min</span>
+                </div>
+              ))}
+            </div>
           ) : (
             <EmptyState
-              title="No contribution data yet"
-              message="Once the board has edits from participants, this chart will help you spot balance and over-dominance quickly."
+              title="No mode breakdown yet"
+              message="Once the session records more governance transitions, this section will summarize how facilitation moved over time."
             />
           )}
-        </AnalyticsChartCard>
+        </SectionCard>
       </div>
     </div>
   )

@@ -55,19 +55,16 @@ export function Sidebar({
   return (
     <aside
       className={clsx(
-        "flex h-full flex-col border-r border-[var(--color-border-soft)] bg-[var(--color-bg-surface)]/95 px-3 py-4 backdrop-blur",
-        collapsed && !isMobile ? "w-[5.5rem]" : "w-72",
+        "flex h-full flex-col border-r border-[var(--color-border-soft)] bg-[var(--color-bg-surface)]/95 px-2.5 py-3 backdrop-blur",
+        collapsed && !isMobile ? "w-[4.75rem]" : "w-56",
       )}
     >
       <div className="flex items-start justify-between gap-3">
         <div className={clsx("min-w-0", collapsed && !isMobile && "sr-only")}>
-          <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[var(--color-accent)]">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--color-accent)]">
             CW-Engine
           </p>
-          <h2 className="mt-2 text-lg font-semibold text-[var(--color-text-primary)]">
-            Whiteboard Session
-          </h2>
-          <p className="mt-2 line-clamp-2 text-sm leading-6 text-[var(--color-text-muted)]">
+          <p className="mt-2 line-clamp-2 text-sm font-medium leading-5 text-[var(--color-text-muted)]">
             {sessionName}
           </p>
         </div>
@@ -78,6 +75,7 @@ export function Sidebar({
             variant="ghost"
             size="sm"
             onClick={onToggleCollapse}
+            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
             className="shrink-0"
           >
             {collapsed ? <ChevronsRight className="h-4 w-4" /> : <ChevronsLeft className="h-4 w-4" />}
@@ -85,7 +83,7 @@ export function Sidebar({
         ) : null}
       </div>
 
-      <div className="mt-5 flex flex-wrap gap-2">
+      <div className="mt-4 flex flex-wrap gap-2">
         <Badge role={role} size="sm">
           {collapsed && !isMobile ? role[0] : role}
         </Badge>
@@ -107,7 +105,7 @@ export function Sidebar({
               href={item.href}
               onClick={onNavigate}
               className={clsx(
-                "group flex items-center gap-3 rounded-2xl border px-3 py-3 text-sm transition",
+                "group flex items-center gap-3 rounded-xl border px-3 py-2.5 text-sm transition",
                 isActive
                   ? "border-[var(--color-accent)] bg-[var(--color-accent-soft)] text-[var(--color-text-primary)]"
                   : "border-transparent text-[var(--color-text-muted)] hover:border-[var(--color-border-soft)] hover:bg-[var(--color-bg-elevated)] hover:text-[var(--color-text-primary)]",
@@ -124,15 +122,6 @@ export function Sidebar({
           )
         })}
       </nav>
-
-      <div className="mt-auto rounded-2xl border border-[var(--color-border-soft)] bg-[var(--color-bg-elevated)] p-4">
-        <p className={clsx("text-sm font-semibold text-[var(--color-text-primary)]", collapsed && !isMobile && "sr-only")}>
-          Structured collaboration, explained simply
-        </p>
-        <p className={clsx("mt-2 text-sm leading-6 text-[var(--color-text-muted)]", collapsed && !isMobile && "sr-only")}>
-          Draw first. Use governance and analytics only when the session needs a bit more focus.
-        </p>
-      </div>
     </aside>
   )
 }

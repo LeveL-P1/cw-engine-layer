@@ -77,8 +77,6 @@ export function AppShell({
           headerActions={headerActions}
           hasUtilityPanel={Boolean(utilityPanel)}
           isSessionRefreshing={isSessionRefreshing}
-          sidebarCollapsed={sidebarCollapsed}
-          onDesktopSidebarToggle={() => setSidebarCollapsed((value) => !value)}
           onMobileSidebarOpen={() => setMobileSidebarOpen(true)}
           onUtilityOpen={() => setMobileUtilityOpen(true)}
         />
@@ -89,7 +87,7 @@ export function AppShell({
               "min-w-0 flex-1",
               variant === "whiteboard"
                 ? "bg-[var(--color-bg-canvas)]"
-                : "bg-[linear-gradient(180deg,color-mix(in_srgb,var(--color-bg-canvas)_92%,white)_0%,var(--color-bg-app)_100%)]",
+                : "bg-[linear-gradient(180deg,rgba(12,12,20,0.88)_0%,rgba(6,6,12,0.96)_100%)]",
               contentScrollable ? "overflow-y-auto overflow-x-hidden" : "overflow-hidden",
             )}
           >

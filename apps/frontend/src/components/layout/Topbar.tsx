@@ -3,13 +3,7 @@
 import type { ReactNode } from "react"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import {
-  LogOut,
-  Menu,
-  PanelLeftClose,
-  PanelLeftOpen,
-  SlidersHorizontal,
-} from "lucide-react"
+import { LogOut, Menu, SlidersHorizontal } from "lucide-react"
 import { useAuth } from "@/context/auth-context"
 import { useSession } from "@/context/session-context"
 import { formatDuration, useTimer } from "@/hooks/useTimer"
@@ -17,14 +11,13 @@ import { Badge } from "@/components/ui/Badge"
 import { Button } from "@/components/ui/Button"
 import { InlineLoader } from "@/components/ui/InlineLoader"
 import { UserPresence } from "@/components/session/UserPresence"
+import { ModeDropdown } from "@/components/governance/ModeDropdown"
 
 interface TopbarProps {
   variant: "whiteboard" | "insights"
   headerActions?: ReactNode
   hasUtilityPanel: boolean
   isSessionRefreshing: boolean
-  sidebarCollapsed: boolean
-  onDesktopSidebarToggle: () => void
   onMobileSidebarOpen: () => void
   onUtilityOpen: () => void
 }
@@ -34,8 +27,6 @@ export function Topbar({
   headerActions,
   hasUtilityPanel,
   isSessionRefreshing,
-  sidebarCollapsed,
-  onDesktopSidebarToggle,
   onMobileSidebarOpen,
   onUtilityOpen,
 }: TopbarProps) {
@@ -61,82 +52,67 @@ export function Topbar({
   }
 
   return (
-    <header className="border-b border-[var(--color-border-soft)] bg-[var(--color-bg-surface)]/95 px-3 py-3 backdrop-blur sm:px-4 lg:px-5">
-      <div className="flex flex-col gap-3">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="flex min-w-0 items-start gap-2">
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={onMobileSidebarOpen}
-              className="lg:hidden"
-            >
-              <Menu className="h-4 w-4" />
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={onDesktopSidebarToggle}
-              className="hidden lg:inline-flex"
-            >
-              {sidebarCollapsed ? (
-                <PanelLeftOpen className="h-4 w-4" />
-              ) : (
-                <PanelLeftClose className="h-4 w-4" />
-              )}
-            </Button>
+    <header className="relative border-b border-[var(--color-border-soft)] bg-[var(--color-bg-surface)]/95 px-3 py-2 backdrop-blur sm:px-4">
+      {isSessionRefreshing ? (
+        <div className="pointer-events-none absolute left-1/2 top-2 z-10 -translate-x-1/2">
+          <InlineLoader label="Syncing session..." />
+        </div>
+      ) : null}
 
-            <div className="min-w-0">
-              <p className="truncate text-lg font-semibold text-[var(--color-text-primary)]">
-                {sessionName}
-              </p>
-              <p className="text-sm text-[var(--color-text-muted)]">
-                {pageDescription}
-              </p>
-            </div>
-          </div>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-2">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={onMobileSidebarOpen}
+            aria-label="Open session navigation"
+            className="lg:hidden"
+          >
+            <Menu className="h-4 w-4" />
+          </Button>
 
-          <div className="flex flex-wrap items-center justify-end gap-2">
-            <Badge mode={mode}>{mode}</Badge>
-            <div className="hidden sm:block">
-              <UserPresence />
+          <div className="min-w-0">
+            <p className="truncate text-base font-semibold text-[var(--color-text-primary)]">
+              {sessionName}
+            </p>
+            <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-[var(--color-text-muted)]">
+              <span>{pageDescription}</span>
+              <span>Session {formatDuration(sessionElapsed)}</span>
+              <span>Signed in as {user?.name ?? "Session member"}</span>
             </div>
-            {headerActions}
-            {hasUtilityPanel ? (
-              <Button type="button" variant="secondary" size="sm" onClick={onUtilityOpen} className="xl:hidden">
-                <SlidersHorizontal className="h-4 w-4" />
-                Controls
-              </Button>
-            ) : null}
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={handleLogout}
-              disabled={isLoggingOut}
-            >
-              <LogOut className="h-4 w-4" />
-              {isLoggingOut ? "Signing out..." : "Logout"}
-            </Button>
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-[var(--color-text-muted)]">
-          <div className="flex flex-wrap items-center gap-3">
-            <span>Session time {formatDuration(sessionElapsed)}</span>
-            <span className="hidden sm:inline">
-              Signed in as {user?.name ?? "Session member"}
-            </span>
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <Badge mode={mode} size="sm">
+            {mode}
+          </Badge>
+          <ModeDropdown />
+          <div className="hidden sm:block">
+            <UserPresence />
           </div>
-          <div className="flex items-center gap-3">
-            <div className="sm:hidden">
-              <UserPresence />
-            </div>
-            {isSessionRefreshing ? <InlineLoader label="Syncing session..." /> : null}
-          </div>
+          {headerActions}
+          {hasUtilityPanel ? (
+            <Button type="button" variant="secondary" size="sm" onClick={onUtilityOpen} className="xl:hidden">
+              <SlidersHorizontal className="h-4 w-4" />
+            </Button>
+          ) : null}
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={handleLogout}
+            disabled={isLoggingOut}
+          >
+            <LogOut className="h-4 w-4" />
+            {isLoggingOut ? "..." : "Logout"}
+          </Button>
         </div>
+      </div>
+
+      <div className="mt-2 flex items-center justify-between gap-3 sm:hidden">
+        <UserPresence />
       </div>
     </header>
   )

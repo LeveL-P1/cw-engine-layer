@@ -1,32 +1,32 @@
 @import "tailwindcss";
 
 :root {
-  --background: #edf3f8;
-  --foreground: #102033;
+  --background: #000000;
+  --foreground: #f5f7ff;
 
-  --color-bg-app: #eaf1f6;
-  --color-bg-canvas: #eef4f8;
-  --color-bg-surface: rgba(255, 255, 255, 0.86);
-  --color-bg-elevated: #f8fbfd;
-  --color-bg-strong: #0f1c2f;
-  --color-border-soft: #d5e0ea;
-  --color-border-strong: #b7c8d6;
-  --color-text-primary: #102033;
-  --color-text-secondary: #2d465f;
-  --color-text-muted: #587089;
-  --color-accent: #0f766e;
-  --color-accent-strong: #115e59;
-  --color-accent-soft: rgba(15, 118, 110, 0.12);
-  --color-success: #15803d;
-  --color-warning: #b45309;
-  --color-danger: #b91c1c;
-  --color-chart-1: #0f766e;
-  --color-chart-2: #2563eb;
-  --color-chart-3: #f59e0b;
-  --color-chart-4: #059669;
-  --color-chart-5: #dc2626;
-  --shadow-soft: 0 18px 40px rgba(15, 23, 42, 0.08);
-  --shadow-panel: 0 28px 60px rgba(15, 23, 42, 0.14);
+  --color-bg-app: rgba(5, 5, 10, 0.96);
+  --color-bg-canvas: rgba(8, 8, 14, 0.95);
+  --color-bg-surface: rgba(16, 18, 30, 0.78);
+  --color-bg-elevated: rgba(22, 24, 38, 0.88);
+  --color-bg-strong: #07070c;
+  --color-border-soft: rgba(255, 255, 255, 0.1);
+  --color-border-strong: rgba(255, 255, 255, 0.18);
+  --color-text-primary: #f7f8ff;
+  --color-text-secondary: #d5daf3;
+  --color-text-muted: #9ea8cc;
+  --color-accent: #44f0ff;
+  --color-accent-strong: #ff4bd8;
+  --color-accent-soft: rgba(138, 43, 226, 0.18);
+  --color-success: #3ddc97;
+  --color-warning: #ffd24d;
+  --color-danger: #ff6b95;
+  --color-chart-1: #44f0ff;
+  --color-chart-2: #8a2be2;
+  --color-chart-3: #ffd700;
+  --color-chart-4: #ff1493;
+  --color-chart-5: #8b5cf6;
+  --shadow-soft: 0 18px 45px rgba(0, 0, 0, 0.35);
+  --shadow-panel: 0 30px 90px rgba(0, 0, 0, 0.45);
   --radius-panel: 1.5rem;
 }
 
@@ -37,40 +37,17 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #07101d;
-    --foreground: #e2e8f0;
-
-    --color-bg-app: #040b16;
-    --color-bg-canvas: #091220;
-    --color-bg-surface: rgba(15, 23, 42, 0.9);
-    --color-bg-elevated: #111d32;
-    --color-bg-strong: #0b1322;
-    --color-border-soft: #22344c;
-    --color-border-strong: #314963;
-    --color-text-primary: #e2e8f0;
-    --color-text-secondary: #bfd0df;
-    --color-text-muted: #93a8bc;
-    --color-accent: #14b8a6;
-    --color-accent-strong: #0f9b8e;
-    --color-accent-soft: rgba(20, 184, 166, 0.16);
-    --color-success: #22c55e;
-    --color-warning: #f59e0b;
-    --color-danger: #ef4444;
-    --color-chart-1: #06b6d4;
-    --color-chart-2: #3b82f6;
-    --color-chart-3: #f59e0b;
-    --color-chart-4: #34d399;
-    --color-chart-5: #fb7185;
-  }
-}
-
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: "Trebuchet MS", "Segoe UI", sans-serif;
   min-height: 100vh;
+  background-image:
+    radial-gradient(ellipse 120% 80% at 70% 20%, rgba(255, 20, 147, 0.15), transparent 50%),
+    radial-gradient(ellipse 100% 60% at 30% 10%, rgba(0, 255, 255, 0.12), transparent 60%),
+    radial-gradient(ellipse 90% 70% at 50% 0%, rgba(138, 43, 226, 0.18), transparent 65%),
+    radial-gradient(ellipse 110% 50% at 80% 30%, rgba(255, 215, 0, 0.08), transparent 40%);
+  background-attachment: fixed;
 }
 
 body::before {
@@ -78,9 +55,23 @@ body::before {
   position: fixed;
   inset: 0;
   pointer-events: none;
+  z-index: -2;
+  background-color: #0a0a0a;
+  background-image:
+    radial-gradient(circle at 25% 25%, #222222 0.5px, transparent 1px),
+    radial-gradient(circle at 75% 75%, #111111 0.5px, transparent 1px);
+  background-size: 10px 10px;
+  image-rendering: pixelated;
+}
+
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
   background:
-    radial-gradient(circle at top left, rgba(15, 118, 110, 0.12), transparent 34%),
-    radial-gradient(circle at top right, rgba(37, 99, 235, 0.08), transparent 28%);
+    linear-gradient(180deg, rgba(0, 0, 0, 0.08), rgba(0, 0, 0, 0.34));
 }
 
 * {
