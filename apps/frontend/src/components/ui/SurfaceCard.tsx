@@ -12,7 +12,7 @@ export function SurfaceCard({ children, className }: SurfaceCardProps) {
   return (
     <div
       className={clsx(
-        "rounded-2xl border border-[var(--color-border-soft)] bg-[var(--color-bg-elevated)] shadow-lg",
+        "rounded-[var(--radius-panel)] border border-[var(--color-border-soft)] bg-[var(--color-bg-surface)] shadow-[var(--shadow-soft)] backdrop-blur",
         className,
       )}
     >

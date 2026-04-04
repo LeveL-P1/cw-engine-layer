@@ -1,17 +1,18 @@
 "use client"
 
 import { useSession } from "@/context/session-context"
+import clsx from "clsx"
 
 function getRoleColor(role: string) {
   switch (role) {
     case "FACILITATOR":
-      return "bg-blue-600"
+      return "bg-sky-600"
     case "CONTRIBUTOR":
       return "bg-indigo-600"
     case "OBSERVER":
-      return "bg-zinc-600"
+      return "bg-slate-600"
     default:
-      return "bg-zinc-700"
+      return "bg-slate-700"
   }
 }
 
@@ -34,9 +35,12 @@ export function UserPresence() {
           <div
             key={user.id}
             title={`${user.name} (${user.role})`}
-            className={`w-8 h-8 rounded-full flex items-center justify-center text-xs text-white ${getRoleColor(
+            className={clsx(
+              "flex h-8 w-8 items-center justify-center rounded-full text-xs font-semibold text-white ring-2 ring-[var(--color-bg-surface)]",
+              getRoleColor(
               user.role
-            )}`}
+              ),
+            )}
           >
             {initials}
           </div>
@@ -44,7 +48,7 @@ export function UserPresence() {
       })}
 
       {overflow > 0 && (
-        <div className="w-8 h-8 rounded-full bg-zinc-800 text-zinc-300 flex items-center justify-center text-xs">
+        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--color-bg-elevated)] text-xs text-[var(--color-text-muted)] ring-2 ring-[var(--color-bg-surface)]">
           +{overflow}
         </div>
       )}

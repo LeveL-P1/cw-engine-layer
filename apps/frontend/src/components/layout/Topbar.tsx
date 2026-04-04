@@ -1,30 +1,54 @@
 "use client"
 
+import type { ReactNode } from "react"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { useSession } from "@/context/session-context"
+import {
+  LogOut,
+  Menu,
+  PanelLeftClose,
+  PanelLeftOpen,
+  SlidersHorizontal,
+} from "lucide-react"
 import { useAuth } from "@/context/auth-context"
-import { useTimer, formatDuration } from "@/hooks/useTimer"
+import { useSession } from "@/context/session-context"
+import { formatDuration, useTimer } from "@/hooks/useTimer"
 import { Badge } from "@/components/ui/Badge"
-import { ModeControlPanel } from "@/components/governance/ModeControlPanel"
-import { CollaborationHealthIndicator } from "@/components/analytics/CollaborationHealthIndicator"
+import { Button } from "@/components/ui/Button"
+import { InlineLoader } from "@/components/ui/InlineLoader"
 import { UserPresence } from "@/components/session/UserPresence"
 
-export function Topbar() {
+interface TopbarProps {
+  variant: "whiteboard" | "insights"
+  headerActions?: ReactNode
+  hasUtilityPanel: boolean
+  isSessionRefreshing: boolean
+  sidebarCollapsed: boolean
+  onDesktopSidebarToggle: () => void
+  onMobileSidebarOpen: () => void
+  onUtilityOpen: () => void
+}
+
+export function Topbar({
+  variant,
+  headerActions,
+  hasUtilityPanel,
+  isSessionRefreshing,
+  sidebarCollapsed,
+  onDesktopSidebarToggle,
+  onMobileSidebarOpen,
+  onUtilityOpen,
+}: TopbarProps) {
   const router = useRouter()
   const { user, logout } = useAuth()
-  const {
-    sessionId,
-    sessionName,
-    mode,
-    sessionStartTime,
-    modeStartedAt,
-  } = useSession()
+  const { sessionName, mode, sessionStartTime } = useSession()
   const [isLoggingOut, setIsLoggingOut] = useState(false)
-  const [inviteCopied, setInviteCopied] = useState(false)
 
   const sessionElapsed = useTimer(sessionStartTime)
-  const modeElapsed = useTimer(modeStartedAt)
+  const pageDescription =
+    variant === "whiteboard"
+      ? "Live whiteboard workspace"
+      : "Session insights and wrap-up"
 
   const handleLogout = async () => {
     try {
@@ -36,65 +60,83 @@ export function Topbar() {
     }
   }
 
-  const handleCopyInvite = async () => {
-    const inviteUrl = `${window.location.origin}/sessions?sessionId=${sessionId}`
-
-    await navigator.clipboard.writeText(inviteUrl)
-    setInviteCopied(true)
-    window.setTimeout(() => setInviteCopied(false), 2000)
-  }
-
   return (
-    <header className="h-16 bg-zinc-900 border-b border-zinc-800 flex items-center justify-between px-6">
-      <div>
-        <h1 className="text-xl font-semibold">
-          {sessionName}
-        </h1>
-        <p className="text-xs text-zinc-400">
-          Real-time governed collaboration
-        </p>
-      </div>
+    <header className="border-b border-[var(--color-border-soft)] bg-[var(--color-bg-surface)]/95 px-3 py-3 backdrop-blur sm:px-4 lg:px-5">
+      <div className="flex flex-col gap-3">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="flex min-w-0 items-start gap-2">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={onMobileSidebarOpen}
+              className="lg:hidden"
+            >
+              <Menu className="h-4 w-4" />
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={onDesktopSidebarToggle}
+              className="hidden lg:inline-flex"
+            >
+              {sidebarCollapsed ? (
+                <PanelLeftOpen className="h-4 w-4" />
+              ) : (
+                <PanelLeftClose className="h-4 w-4" />
+              )}
+            </Button>
 
-      <div className="flex items-center gap-6">
-        <Badge mode={mode}>{mode}</Badge>
+            <div className="min-w-0">
+              <p className="truncate text-lg font-semibold text-[var(--color-text-primary)]">
+                {sessionName}
+              </p>
+              <p className="text-sm text-[var(--color-text-muted)]">
+                {pageDescription}
+              </p>
+            </div>
+          </div>
 
-        <ModeControlPanel />
-
-        <button
-          type="button"
-          onClick={handleCopyInvite}
-          className="rounded-md border border-zinc-700 px-3 py-2 text-sm font-medium text-zinc-200 transition hover:bg-zinc-800"
-        >
-          {inviteCopied ? "Invite copied" : "Copy Invite"}
-        </button>
-
-        <div className="text-sm text-zinc-300">
-          Session: {formatDuration(sessionElapsed)}
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            <Badge mode={mode}>{mode}</Badge>
+            <div className="hidden sm:block">
+              <UserPresence />
+            </div>
+            {headerActions}
+            {hasUtilityPanel ? (
+              <Button type="button" variant="secondary" size="sm" onClick={onUtilityOpen} className="xl:hidden">
+                <SlidersHorizontal className="h-4 w-4" />
+                Controls
+              </Button>
+            ) : null}
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={handleLogout}
+              disabled={isLoggingOut}
+            >
+              <LogOut className="h-4 w-4" />
+              {isLoggingOut ? "Signing out..." : "Logout"}
+            </Button>
+          </div>
         </div>
 
-        <div className="text-xs text-zinc-500">
-          Mode Duration: {formatDuration(modeElapsed)}
+        <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-[var(--color-text-muted)]">
+          <div className="flex flex-wrap items-center gap-3">
+            <span>Session time {formatDuration(sessionElapsed)}</span>
+            <span className="hidden sm:inline">
+              Signed in as {user?.name ?? "Session member"}
+            </span>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="sm:hidden">
+              <UserPresence />
+            </div>
+            {isSessionRefreshing ? <InlineLoader label="Syncing session..." /> : null}
+          </div>
         </div>
-      </div>
-
-      <CollaborationHealthIndicator />
-
-      <div className="flex items-center gap-4 text-zinc-400">
-        <div className="text-right">
-          <p className="text-sm text-zinc-200">{user?.name ?? "Signed in user"}</p>
-          <p className="text-xs text-zinc-500">{user?.email ?? ""}</p>
-        </div>
-        <div className="flex items-center gap-2 text-sm">
-          <UserPresence />
-        </div>
-        <button
-          type="button"
-          onClick={handleLogout}
-          disabled={isLoggingOut}
-          className="rounded-md border border-zinc-700 px-3 py-2 text-sm font-medium text-zinc-200 transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          {isLoggingOut ? "Signing out..." : "Logout"}
-        </button>
       </div>
     </header>
   )

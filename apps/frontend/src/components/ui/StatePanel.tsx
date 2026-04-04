@@ -21,12 +21,14 @@ export function StatePanel({
 }: StatePanelProps) {
   const accentClass =
     tone === "danger"
-      ? "border-red-500/30 bg-red-500/10 text-red-100"
-      : "border-[var(--color-border-soft)] bg-[var(--color-bg-elevated)] text-[var(--color-text-primary)]"
+      ? "border-red-500/30 bg-red-500/10 text-[var(--color-text-primary)]"
+      : "border-[var(--color-border-soft)] bg-[var(--color-bg-surface)] text-[var(--color-text-primary)]"
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-[var(--color-bg-canvas)] px-4 text-[var(--color-text-primary)]">
-      <div className={`w-full max-w-md rounded-2xl border p-8 shadow-lg ${accentClass}`}>
+      <div
+        className={`w-full max-w-md rounded-[var(--radius-panel)] border p-8 shadow-[var(--shadow-panel)] backdrop-blur ${accentClass}`}
+      >
         {loading ? (
           <div className="mb-4 h-8 w-8 animate-spin rounded-full border-4 border-[var(--color-accent)] border-t-transparent" />
         ) : null}

@@ -1,12 +1,19 @@
 "use client"
 
 import { useSession } from "@/context/session-context"
+import clsx from "clsx"
 
-export function CollaborationHealthIndicator() {
+interface CollaborationHealthIndicatorProps {
+  compact?: boolean
+}
+
+export function CollaborationHealthIndicator({
+  compact = false,
+}: CollaborationHealthIndicatorProps) {
   const { dominanceRatio } = useSession()
 
   let label = "Balanced"
-  let color = "bg-emerald-600"
+  let color = "bg-emerald-500"
 
   if (dominanceRatio > 0.7) {
     label = "Imbalanced"
@@ -17,9 +24,14 @@ export function CollaborationHealthIndicator() {
   }
 
   return (
-    <div className="flex items-center gap-2 text-sm">
-      <div className={`w-3 h-3 rounded-full ${color}`} />
-      <span className="text-zinc-300">{label}</span>
+    <div
+      className={clsx(
+        "inline-flex items-center gap-2 rounded-full border border-[var(--color-border-soft)] bg-[var(--color-bg-elevated)] px-3 py-1.5 text-sm text-[var(--color-text-secondary)]",
+        compact && "border-none bg-transparent px-0 py-0",
+      )}
+    >
+      <div className={`h-2.5 w-2.5 rounded-full ${color}`} />
+      <span>{label}</span>
     </div>
   )
 }

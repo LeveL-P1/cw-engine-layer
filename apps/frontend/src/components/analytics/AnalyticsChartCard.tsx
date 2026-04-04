@@ -20,7 +20,7 @@ export function AnalyticsChartCard({
   children,
 }: AnalyticsChartCardProps) {
   return (
-    <SurfaceCard className="overflow-hidden bg-[var(--color-bg-surface)]">
+    <SurfaceCard className="overflow-hidden">
       <div className="flex items-start justify-between gap-4 p-5">
         <div className="space-y-2">
           <p className="text-sm font-semibold text-[var(--color-text-primary)]">

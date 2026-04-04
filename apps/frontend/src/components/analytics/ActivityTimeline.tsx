@@ -99,10 +99,12 @@ export function ActivityTimeline({
   return (
     <div
       className={clsx(
-        "rounded-lg border border-zinc-800 bg-zinc-900 p-6",
+        "rounded-[var(--radius-panel)] border border-[var(--color-border-soft)] bg-[var(--color-bg-surface)] p-6 shadow-[var(--shadow-soft)]",
       )}
     >
-      <h3 className="mb-4 text-lg font-semibold">{title}</h3>
+      <h3 className="mb-4 text-lg font-semibold text-[var(--color-text-primary)]">
+        {title}
+      </h3>
       {chart}
     </div>
   )
