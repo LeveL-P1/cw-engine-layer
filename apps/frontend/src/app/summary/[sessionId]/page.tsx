@@ -14,6 +14,7 @@ import { EmptyState } from "@/components/ui/EmptyState"
 import { InlineLoader } from "@/components/ui/InlineLoader"
 import { PageHeader } from "@/components/ui/PageHeader"
 import { apiFetch } from "@/lib/api"
+import { publicEnv } from "@/lib/public-env"
 import { resolveSessionUiState } from "@/lib/session-ui"
 import {
   emptyMetrics,
@@ -25,8 +26,6 @@ import type {
   SessionRouteContext,
   TimelinePoint,
 } from "@/types/session"
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000"
 
 function SummaryContent({ context }: { context: SessionRouteContext }) {
   const [metrics, setMetrics] = useState<SessionMetrics | null>(null)
@@ -50,10 +49,10 @@ function SummaryContent({ context }: { context: SessionRouteContext }) {
 
       try {
         const [metricsRes, timelineRes, transitionsRes] = await Promise.all([
-          apiFetch(`${API_URL}/api/metrics/${context.sessionInfo.sessionId}`),
-          apiFetch(`${API_URL}/api/metrics/${context.sessionInfo.sessionId}/timeline`),
+          apiFetch(`${publicEnv.apiUrl}/api/metrics/${context.sessionInfo.sessionId}`),
+          apiFetch(`${publicEnv.apiUrl}/api/metrics/${context.sessionInfo.sessionId}/timeline`),
           apiFetch(
-            `${API_URL}/api/metrics/${context.sessionInfo.sessionId}/mode-transitions`,
+            `${publicEnv.apiUrl}/api/metrics/${context.sessionInfo.sessionId}/mode-transitions`,
           ),
         ])
 

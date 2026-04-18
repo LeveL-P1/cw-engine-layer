@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { Suspense, useEffect, useState } from "react"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useAuth } from "@/context/auth-context"
@@ -12,7 +12,7 @@ import { SurfaceCard } from "@/components/ui/SurfaceCard"
 
 type AuthMode = "signin" | "signup"
 
-export default function AuthPage() {
+function AuthContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { login, register, isLoading, isAuthenticated } = useAuth()
@@ -237,5 +237,21 @@ export default function AuthPage() {
         </SurfaceCard>
       </div>
     </div>
+  )
+}
+
+export default function AuthPage() {
+  return (
+    <Suspense
+      fallback={
+        <StatePanel
+          title="Loading authentication"
+          message="Preparing the sign-in form..."
+          loading
+        />
+      }
+    >
+      <AuthContent />
+    </Suspense>
   )
 }

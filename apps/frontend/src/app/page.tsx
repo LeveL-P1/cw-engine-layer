@@ -148,7 +148,7 @@ const faqs = [
   },
 ]
 
-const heroWords = ["structure", "brainstorm", "plan", "ship together"]
+const heroWords = ["structuring", "brainstorming", "planning", "shipping together"]
 
 function FadeIn({
   children,
@@ -234,7 +234,7 @@ function FlippingHeroWord() {
   }, [reduceMotion])
 
   if (reduceMotion) {
-    return <span className="text-[var(--color-accent)]">structure</span>
+    return <span className="text-[var(--color-accent)]">structuring</span>
   }
 
   return (
@@ -397,7 +397,7 @@ export default function HomePage() {
                 transition={{ duration: 0.6, ease: "easeOut", delay: 0.1 }}
                 className="max-w-4xl text-5xl font-semibold leading-[1.02] tracking-[-0.04em] sm:text-6xl lg:text-7xl"
               >
-                Infinite canvas with <FlippingHeroWord />.
+                Infinite canvas for <FlippingHeroWord />
               </motion.h1>
               <motion.p
                 initial={reduceMotion ? false : { opacity: 0, y: 24 }}

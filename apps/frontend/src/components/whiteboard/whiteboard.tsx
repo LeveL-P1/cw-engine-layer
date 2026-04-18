@@ -8,13 +8,12 @@ import { setCanvasEventHandler } from "@/lib/websocket"
 import { handleCanvasChange } from "./CanvasAdapter"
 import { useSession, type ModeType } from "@/context/session-context"
 import { apiFetch } from "@/lib/api"
+import { publicEnv } from "@/lib/public-env"
 
 interface Props {
   sessionId: string
   userId: string
 }
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000"
 
 export default function Whiteboard({ sessionId, userId }: Props) {
   // Mode is owned by SessionProvider — no local duplicate state
@@ -24,7 +23,7 @@ export default function Whiteboard({ sessionId, userId }: Props) {
   // Sync the actual session mode from the backend once on mount.
   // SessionProvider keeps it live via WS after this.
   useEffect(() => {
-    apiFetch(`${API_URL}/api/mode/${sessionId}`)
+    apiFetch(`${publicEnv.apiUrl}/api/mode/${sessionId}`)
       .then((res) => res.json())
       .then((data) => {
         if (data.mode) setMode(data.mode as ModeType)

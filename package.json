@@ -6,8 +6,14 @@
     "dev": "pnpm -r --parallel --filter backend --filter frontend dev",
     "dev:backend": "pnpm --filter backend dev",
     "dev:frontend": "pnpm --filter frontend dev",
-    "lint:frontend": "pnpm --filter frontend lint",
-    "typecheck:backend": "pnpm --filter backend typecheck"
+    "lint:frontend": "corepack pnpm --filter frontend lint",
+    "typecheck:frontend": "corepack pnpm --filter frontend typecheck",
+    "typecheck:backend": "corepack pnpm --filter backend typecheck",
+    "build:frontend": "corepack pnpm --filter frontend build",
+    "build:backend": "corepack pnpm --filter backend build",
+    "prisma:validate": "corepack pnpm --filter backend prisma:validate",
+    "prisma:migrate:deploy": "corepack pnpm --filter backend prisma:migrate:deploy",
+    "production:check": "pnpm lint:frontend && pnpm typecheck:frontend && pnpm typecheck:backend && pnpm prisma:validate"
   },
   "packageManager": "pnpm@10.28.2"
 }

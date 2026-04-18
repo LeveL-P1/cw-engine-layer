@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { Suspense, useEffect, useMemo, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { ProtectedRoute } from "@/components/ProtectedRoute"
 import { AlertMessage } from "@/components/ui/AlertMessage"
@@ -11,9 +11,9 @@ import { SurfaceCard } from "@/components/ui/SurfaceCard"
 import { useAuth } from "@/context/auth-context"
 import { setStoredSession } from "@/lib/session-storage"
 import { apiFetch, getApiErrorMessage } from "@/lib/api"
+import { publicEnv } from "@/lib/public-env"
 import type { RoleType } from "@/context/session-context"
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000"
 const DEFAULT_SESSION_NAME = "Whiteboard Session"
 
 function resolveJoinSessionId(input: string): string {
@@ -31,7 +31,7 @@ function resolveJoinSessionId(input: string): string {
   }
 }
 
-export default function SessionsPage() {
+function SessionsContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { user, logout } = useAuth()
@@ -95,7 +95,7 @@ export default function SessionsPage() {
     try {
       const role: RoleType = "FACILITATOR"
 
-      const createRes = await apiFetch(`${API_URL}/api/sessions`, {
+      const createRes = await apiFetch(`${publicEnv.apiUrl}/api/sessions`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -111,7 +111,7 @@ export default function SessionsPage() {
 
       const created = await createRes.json()
 
-      const joinRes = await apiFetch(`${API_URL}/api/sessions/${created.id}/join`, {
+      const joinRes = await apiFetch(`${publicEnv.apiUrl}/api/sessions/${created.id}/join`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -174,7 +174,7 @@ export default function SessionsPage() {
     try {
       const role: RoleType = "CONTRIBUTOR"
 
-      const joinRes = await apiFetch(`${API_URL}/api/sessions/${sessionId}/join`, {
+      const joinRes = await apiFetch(`${publicEnv.apiUrl}/api/sessions/${sessionId}/join`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -300,5 +300,23 @@ export default function SessionsPage() {
         </div>
       </div>
     </ProtectedRoute>
+  )
+}
+
+export default function SessionsPage() {
+  return (
+    <Suspense
+      fallback={
+        <ProtectedRoute>
+          <StatePanel
+            title="Loading your lobby"
+            message="Preparing session options..."
+            loading
+          />
+        </ProtectedRoute>
+      }
+    >
+      <SessionsContent />
+    </Suspense>
   )
 }

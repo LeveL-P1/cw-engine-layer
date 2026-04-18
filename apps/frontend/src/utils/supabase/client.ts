@@ -1,10 +1,8 @@
 import { createBrowserClient } from "@supabase/ssr"
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY!
+import { publicEnv } from "@/lib/public-env"
 
 export const createClient = () =>
   createBrowserClient(
-    supabaseUrl,
-    supabaseKey,
+    publicEnv.supabaseUrl,
+    publicEnv.supabasePublishableKey,
   )

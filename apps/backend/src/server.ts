@@ -18,7 +18,16 @@ import { requireAuth } from "./middleware/auth"
 const app = express()
 const server = http.createServer(app)
 
-const wss = new WebSocketServer({ server })
+function isAllowedOrigin(origin: string | undefined) {
+  return !origin || env.corsOrigins.includes(origin)
+}
+
+const wss = new WebSocketServer({
+  server,
+  verifyClient: ({ origin }, done) => {
+    done(isAllowedOrigin(origin), 403, "Forbidden")
+  },
+})
 
 setupWebSocket(wss)
 initTelemetry()
@@ -26,7 +35,15 @@ subscribe(persistEvent)
 
 
 app.use(cors({
-  origin: env.corsOrigin
+  origin(origin, callback) {
+    if (isAllowedOrigin(origin)) {
+      callback(null, true)
+      return
+    }
+
+    callback(new Error("Not allowed by CORS"))
+  },
+  credentials: true,
 }))
 
 app.use(express.json())
@@ -34,7 +51,7 @@ app.use(express.json())
 app.use("/api", requireAuth, analyticsRoutes)
 app.use("/api/sessions", requireAuth, sessionRoutes)
 
-setInterval(async () => {
+const snapshotInterval = setInterval(async () => {
   const sessionIds = getAllSessionIds()
   for (const id of sessionIds) {
     await createSnapshot(id)
@@ -61,4 +78,23 @@ void start().catch((error) => {
   console.error("Failed to start backend", error)
   process.exit(1)
 })
+
+function shutdown(signal: NodeJS.Signals) {
+  console.log(`${signal} received. Shutting down backend...`)
+  clearInterval(snapshotInterval)
+
+  wss.close(() => {
+    server.close(() => {
+      prisma.$disconnect()
+        .then(() => process.exit(0))
+        .catch((error) => {
+          console.error("Failed to disconnect Prisma", error)
+          process.exit(1)
+        })
+    })
+  })
+}
+
+process.on("SIGINT", shutdown)
+process.on("SIGTERM", shutdown)
 

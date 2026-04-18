@@ -3,8 +3,8 @@
 import { useState } from "react"
 import { useSession, type ModeType } from "@/context/session-context"
 import { apiFetch } from "@/lib/api"
+import { publicEnv } from "@/lib/public-env"
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000"
 const modes: ModeType[] = ["FREE", "DECISION", "LOCKED"]
 
 export function ModeDropdown() {
@@ -29,7 +29,7 @@ export function ModeDropdown() {
 
     try {
       setLoading(true)
-      await apiFetch(`${API_URL}/api/mode/${sessionId}`, {
+      await apiFetch(`${publicEnv.apiUrl}/api/mode/${sessionId}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ mode: nextMode }),

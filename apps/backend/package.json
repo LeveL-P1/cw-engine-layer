@@ -7,6 +7,8 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "predev": "prisma generate",
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
+    "build": "prisma generate && tsc",
+    "start": "node dist/server.js",
     "typecheck": "tsc --noEmit",
     "prisma:validate": "prisma validate",
     "prisma:generate": "prisma generate",

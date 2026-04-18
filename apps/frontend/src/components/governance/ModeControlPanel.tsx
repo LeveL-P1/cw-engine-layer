@@ -3,12 +3,12 @@
 import { useState } from "react"
 import { useSession, ModeType } from "@/context/session-context"
 import { apiFetch } from "@/lib/api"
+import { publicEnv } from "@/lib/public-env"
 import { Badge } from "@/components/ui/Badge"
 import { Button } from "@/components/ui/Button"
 import { SurfaceCard } from "@/components/ui/SurfaceCard"
 
 const modes: ModeType[] = ["FREE", "DECISION", "LOCKED"]
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000"
 
 export function ModeControlPanel() {
   const { role, mode, sessionId, activeUsers } = useSession()
@@ -38,7 +38,7 @@ export function ModeControlPanel() {
     try {
       setLoading(true)
 
-      await apiFetch(`${API_URL}/api/mode/${sessionId}`, {
+      await apiFetch(`${publicEnv.apiUrl}/api/mode/${sessionId}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

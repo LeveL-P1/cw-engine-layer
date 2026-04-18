@@ -51,6 +51,19 @@ function parsePort(value: string | undefined): number {
   return parsed
 }
 
+function parseCorsOrigins(value: string | undefined): string[] {
+  const origins = (value || "http://localhost:3000")
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean)
+
+  if (origins.length === 0) {
+    throw new Error("CORS_ORIGIN must include at least one origin")
+  }
+
+  return origins
+}
+
 export const env = {
   databaseUrl: requirePostgresUrl("DATABASE_URL"),
   directUrl: process.env.DIRECT_URL?.trim()
@@ -62,5 +75,5 @@ export const env = {
     "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY",
   ),
   port: parsePort(process.env.PORT),
-  corsOrigin: process.env.CORS_ORIGIN?.trim() || "http://localhost:3000",
+  corsOrigins: parseCorsOrigins(process.env.CORS_ORIGIN),
 }

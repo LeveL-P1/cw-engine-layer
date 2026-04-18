@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { Suspense, useState } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import Link from "next/link"
 import { AuthPanelLayout } from "@/components/auth/AuthPanelLayout"
@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/Button"
 import { Input } from "@/components/ui/Input"
 import { useAuth } from "@/context/auth-context"
 
-export default function ResetPasswordPage() {
+function ResetPasswordContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const { resetPassword, isLoading } = useAuth()
@@ -131,5 +131,23 @@ export default function ResetPasswordPage() {
         </div>
       )}
     </AuthPanelLayout>
+  )
+}
+
+export default function ResetPasswordPage() {
+  return (
+    <Suspense
+      fallback={
+        <AuthPanelLayout
+          eyebrow="Password Reset"
+          title="Preparing your reset link"
+          description="We are checking the recovery link before showing the password form."
+        >
+          <div className="h-32 animate-pulse rounded-lg border border-[var(--color-border-soft)] bg-white/5" />
+        </AuthPanelLayout>
+      }
+    >
+      <ResetPasswordContent />
+    </Suspense>
   )
 }

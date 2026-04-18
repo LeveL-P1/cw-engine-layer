@@ -9,6 +9,7 @@ import { PageHeader } from "@/components/ui/PageHeader"
 import { SectionCard } from "@/components/ui/SectionCard"
 import { StatCard } from "@/components/ui/StatCard"
 import { apiFetch } from "@/lib/api"
+import { publicEnv } from "@/lib/public-env"
 import { resolveSessionUiState } from "@/lib/session-ui"
 import {
   computeModeDurations,
@@ -17,8 +18,6 @@ import {
   type TransitionDto,
 } from "@/lib/session-analytics"
 import type { SessionMetrics, SessionRouteContext } from "@/types/session"
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000"
 
 function DashboardContent({ context }: { context: SessionRouteContext }) {
   const [metrics, setMetrics] = useState<SessionMetrics | null>(null)
@@ -37,7 +36,7 @@ function DashboardContent({ context }: { context: SessionRouteContext }) {
       }
 
       try {
-        const metricsRes = await apiFetch(`${API_URL}/api/metrics/${context.sessionInfo.sessionId}`)
+        const metricsRes = await apiFetch(`${publicEnv.apiUrl}/api/metrics/${context.sessionInfo.sessionId}`)
 
         if (!cancelled) {
           if (metricsRes.status === 404) {
@@ -50,7 +49,7 @@ function DashboardContent({ context }: { context: SessionRouteContext }) {
           }
 
           const transitionsRes = await apiFetch(
-            `${API_URL}/api/metrics/${context.sessionInfo.sessionId}/mode-transitions`,
+            `${publicEnv.apiUrl}/api/metrics/${context.sessionInfo.sessionId}/mode-transitions`,
           )
 
           if (transitionsRes.ok) {

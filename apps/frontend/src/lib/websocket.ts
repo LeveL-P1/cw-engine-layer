@@ -1,13 +1,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { getAccessToken } from "@/lib/api"
+import { publicEnv } from "@/lib/public-env"
 
 let socket: WebSocket | null = null
 let modeHandler: ((mode: string) => void) | null = null
 let canvasEventHandler: ((payload: any) => void) | null = null
 let connectedSessionId: string | null = null
 let connectedUserId: string | null = null
-
-const WS_URL = process.env.NEXT_PUBLIC_API_WS_URL ?? "ws://localhost:4000"
 
 export function setModeListener(handler: (mode: string) => void) {
   modeHandler = handler
@@ -34,7 +33,7 @@ export function connectWebSocket(sessionId: string, userId: string) {
     return
   }
 
-  socket = new WebSocket(WS_URL)
+  socket = new WebSocket(publicEnv.apiWsUrl)
   connectedSessionId = sessionId
   connectedUserId = userId
 

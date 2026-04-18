@@ -1,12 +1,11 @@
 import { ApiError, apiFetch, getApiErrorMessage } from "@/lib/api"
+import { publicEnv } from "@/lib/public-env"
 import type { SessionDetails } from "@/types/session"
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000"
 
 export async function fetchSessionDetails(
   sessionId: string,
 ): Promise<SessionDetails> {
-  const response = await apiFetch(`${API_URL}/api/sessions/${sessionId}`)
+  const response = await apiFetch(`${publicEnv.apiUrl}/api/sessions/${sessionId}`)
 
   if (!response.ok) {
     throw new ApiError(
