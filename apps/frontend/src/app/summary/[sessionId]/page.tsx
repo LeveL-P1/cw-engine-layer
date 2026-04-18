@@ -229,8 +229,8 @@ function SummaryContent({ context }: { context: SessionRouteContext }) {
         </AnalyticsChartCard>
 
         <AnalyticsChartCard
-          title="Participation Breakdown"
-          description="See how much each person contributed during the session."
+          title="Participation Ranking"
+          description="A ranked contribution view that compares edits, share, and relative activity without crowding the chart."
           expanded={expandedCharts.breakdown}
           onToggle={() => toggleChart("breakdown")}
         >
@@ -249,8 +249,8 @@ function SummaryContent({ context }: { context: SessionRouteContext }) {
         </AnalyticsChartCard>
 
         <AnalyticsChartCard
-          title="Contribution Dominance"
-          description="A horizontal view of how strongly each participant dominated total board activity. This uses edit-share as the dominance signal."
+          title="Dominance Balance"
+          description="A concentration meter that shows whether activity was balanced or led heavily by one participant."
           expanded={expandedCharts.dominance}
           onToggle={() => toggleChart("dominance")}
         >
