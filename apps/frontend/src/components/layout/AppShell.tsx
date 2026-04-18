@@ -12,7 +12,6 @@ interface AppShellProps {
   contentScrollable?: boolean
   variant?: "whiteboard" | "insights"
   headerActions?: ReactNode
-  utilityPanel?: ReactNode
   isSessionRefreshing?: boolean
 }
 
@@ -23,7 +22,6 @@ export function AppShell({
   contentScrollable = false,
   variant = "insights",
   headerActions,
-  utilityPanel,
   isSessionRefreshing = false,
 }: AppShellProps) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
@@ -38,7 +36,6 @@ export function AppShell({
     }
   })
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
-  const [mobileUtilityOpen, setMobileUtilityOpen] = useState(false)
 
   useEffect(() => {
     try {
@@ -62,23 +59,12 @@ export function AppShell({
         <Sidebar collapsed={false} isMobile onNavigate={() => setMobileSidebarOpen(false)} />
       </Sheet>
 
-      <Sheet
-        open={mobileUtilityOpen}
-        onClose={() => setMobileUtilityOpen(false)}
-        title="Session Controls"
-        side="right"
-      >
-        {utilityPanel}
-      </Sheet>
-
       <div className="flex min-w-0 flex-1 flex-col">
         <Topbar
           variant={variant}
           headerActions={headerActions}
-          hasUtilityPanel={Boolean(utilityPanel)}
           isSessionRefreshing={isSessionRefreshing}
           onMobileSidebarOpen={() => setMobileSidebarOpen(true)}
-          onUtilityOpen={() => setMobileUtilityOpen(true)}
         />
 
         <div className="flex min-h-0 flex-1">
@@ -93,12 +79,6 @@ export function AppShell({
           >
             {children}
           </main>
-
-          {utilityPanel && variant === "insights" ? (
-            <aside className="hidden w-80 shrink-0 border-l border-[var(--color-border-soft)] bg-[var(--color-bg-surface)] p-4 xl:block">
-              {utilityPanel}
-            </aside>
-          ) : null}
         </div>
       </div>
     </div>

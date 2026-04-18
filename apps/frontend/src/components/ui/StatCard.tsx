@@ -14,7 +14,7 @@ export function StatCard({ label, value, helper }: StatCardProps) {
       <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--color-text-muted)]">
         {label}
       </p>
-      <p className="mt-3 text-3xl font-semibold text-[var(--color-text-primary)]">
+      <p className="mt-3 min-w-0 break-words text-2xl font-semibold leading-tight text-[var(--color-text-primary)] md:text-3xl">
         {value}
       </p>
       {helper ? (

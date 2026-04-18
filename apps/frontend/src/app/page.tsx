@@ -228,7 +228,7 @@ function FlippingHeroWord() {
 
     const interval = window.setInterval(() => {
       setCurrentWordIndex((value) => (value + 1) % heroWords.length)
-    }, 700)
+    }, 1200)
 
     return () => window.clearInterval(interval)
   }, [reduceMotion])

@@ -3,7 +3,7 @@
 import type { ReactNode } from "react"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { LogOut, Menu, SlidersHorizontal } from "lucide-react"
+import { LogOut, Menu } from "lucide-react"
 import { useAuth } from "@/context/auth-context"
 import { useSession } from "@/context/session-context"
 import { formatDuration, useTimer } from "@/hooks/useTimer"
@@ -16,19 +16,15 @@ import { ModeDropdown } from "@/components/governance/ModeDropdown"
 interface TopbarProps {
   variant: "whiteboard" | "insights"
   headerActions?: ReactNode
-  hasUtilityPanel: boolean
   isSessionRefreshing: boolean
   onMobileSidebarOpen: () => void
-  onUtilityOpen: () => void
 }
 
 export function Topbar({
   variant,
   headerActions,
-  hasUtilityPanel,
   isSessionRefreshing,
   onMobileSidebarOpen,
-  onUtilityOpen,
 }: TopbarProps) {
   const router = useRouter()
   const { user, logout } = useAuth()
@@ -93,11 +89,6 @@ export function Topbar({
             <UserPresence />
           </div>
           {headerActions}
-          {hasUtilityPanel ? (
-            <Button type="button" variant="secondary" size="sm" onClick={onUtilityOpen} className="xl:hidden">
-              <SlidersHorizontal className="h-4 w-4" />
-            </Button>
-          ) : null}
           <Button
             type="button"
             variant="ghost"

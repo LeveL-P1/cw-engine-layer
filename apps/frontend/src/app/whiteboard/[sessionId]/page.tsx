@@ -3,7 +3,6 @@
 import Whiteboard from "@/components/whiteboard/whiteboard"
 import { SessionRoute } from "@/components/session/SessionRoute"
 import { InlineLoader } from "@/components/ui/InlineLoader"
-import { SessionUtilityPanel } from "@/components/layout/SessionUtilityPanel"
 import type { SessionRouteContext } from "@/types/session"
 
 function WhiteboardWorkspace({ context }: { context: SessionRouteContext }) {
@@ -27,7 +26,6 @@ export default function WhiteboardSessionPage() {
   return (
     <SessionRoute
       variant="whiteboard"
-      utilityPanel={<SessionUtilityPanel />}
     >
       {(context) => <WhiteboardWorkspace context={context} />}
     </SessionRoute>

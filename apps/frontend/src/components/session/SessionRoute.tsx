@@ -21,7 +21,6 @@ interface SessionRouteProps {
   variant?: "whiteboard" | "insights"
   contentScrollable?: boolean
   headerActions?: ReactNode | ((context: SessionRouteContext) => ReactNode)
-  utilityPanel?: ReactNode | ((context: SessionRouteContext) => ReactNode)
   refreshIntervalMs?: number
 }
 
@@ -44,8 +43,7 @@ export function SessionRoute({
   variant = "insights",
   contentScrollable = false,
   headerActions,
-  utilityPanel,
-  refreshIntervalMs = 5000,
+  refreshIntervalMs = 10000,
 }: SessionRouteProps) {
   const router = useRouter()
   const params = useParams<{ sessionId: string }>()
@@ -176,8 +174,6 @@ export function SessionRoute({
 
   const resolvedHeaderActions =
     typeof headerActions === "function" ? headerActions(context) : headerActions
-  const resolvedUtilityPanel =
-    typeof utilityPanel === "function" ? utilityPanel(context) : utilityPanel
 
   return (
     <ProtectedRoute>
@@ -198,7 +194,6 @@ export function SessionRoute({
           variant={variant}
           contentScrollable={contentScrollable}
           headerActions={resolvedHeaderActions}
-          utilityPanel={resolvedUtilityPanel}
           isSessionRefreshing={context.isSessionRefreshing}
         >
           {children(context)}

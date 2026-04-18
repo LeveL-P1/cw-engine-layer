@@ -1,7 +1,6 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
-import { SessionUtilityPanel } from "@/components/layout/SessionUtilityPanel"
 import { SessionRoute } from "@/components/session/SessionRoute"
 import { EmptyState } from "@/components/ui/EmptyState"
 import { InlineLoader } from "@/components/ui/InlineLoader"
@@ -197,7 +196,6 @@ export default function DashboardSessionPage() {
     <SessionRoute
       variant="insights"
       contentScrollable
-      utilityPanel={<SessionUtilityPanel />}
     >
       {(context) => <DashboardContent context={context} />}
     </SessionRoute>

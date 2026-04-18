@@ -7,7 +7,6 @@ import { AnalyticsChartCard } from "@/components/analytics/AnalyticsChartCard"
 import { ContributionDominanceChart } from "@/components/analytics/ContributionDominanceChart"
 import type { ModeTransition } from "@/components/analytics/ActivityTimeline"
 import { ParticipationBreakdown } from "@/components/analytics/ParticipationBreakdown"
-import { SessionUtilityPanel } from "@/components/layout/SessionUtilityPanel"
 import { SessionRoute } from "@/components/session/SessionRoute"
 import { Button } from "@/components/ui/Button"
 import { EmptyState } from "@/components/ui/EmptyState"
@@ -278,7 +277,6 @@ export default function SessionSummaryPage() {
     <SessionRoute
       variant="insights"
       contentScrollable
-      utilityPanel={<SessionUtilityPanel />}
     >
       {(context) => <SummaryContent context={context} />}
     </SessionRoute>
