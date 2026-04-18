@@ -134,35 +134,115 @@ function SummaryContent({ context }: { context: SessionRouteContext }) {
     }))
   }, [context, resolvedMetrics.perUser])
 
-  function exportReport() {
+  function downloadReport(content: string, filename: string, type: string) {
     const blob = new Blob(
-      [
-        JSON.stringify(
-          {
-            sessionName: context.sessionName,
-            totalEdits: resolvedMetrics.totalEdits,
-            participants: resolvedMetrics.activeUsers,
-            dominanceRatio: resolvedMetrics.dominanceRatio,
-            charts: {
-              timeline,
-              contributions: resolvedMetrics.perUser,
-            },
-          },
-          null,
-          2,
-        ),
-      ],
-      {
-        type: "application/json",
-      },
+      [content],
+      { type },
     )
 
     const url = URL.createObjectURL(blob)
     const anchor = document.createElement("a")
     anchor.href = url
-    anchor.download = "session-report.json"
+    anchor.download = filename
     anchor.click()
     URL.revokeObjectURL(url)
+  }
+
+  function getReportPayload() {
+    return {
+      sessionName: context.sessionName,
+      totalEdits: resolvedMetrics.totalEdits,
+      participants: resolvedMetrics.activeUsers,
+      dominanceRatio: resolvedMetrics.dominanceRatio,
+      timeline,
+      modeTransitions,
+      contributions: participationData.map((entry) => {
+        const share =
+          resolvedMetrics.totalEdits > 0
+            ? (entry.edits / resolvedMetrics.totalEdits) * 100
+            : 0
+
+        return {
+          user: entry.userId,
+          edits: entry.edits,
+          sharePercent: Number(share.toFixed(1)),
+        }
+      }),
+      dominance: dominanceData.map((entry) => ({
+        user: entry.user,
+        dominancePercent: Number(entry.dominance.toFixed(1)),
+      })),
+    }
+  }
+
+  function exportJsonReport() {
+    downloadReport(
+      JSON.stringify(getReportPayload(), null, 2),
+      "session-report.json",
+      "application/json",
+    )
+  }
+
+  function exportMarkdownReport() {
+    const payload = getReportPayload()
+    const topContributor = payload.dominance[0]
+    const contributionRows = payload.contributions.length
+      ? payload.contributions
+          .map(
+            (entry, index) =>
+              `| ${index + 1} | ${entry.user} | ${entry.edits} | ${entry.sharePercent}% |`,
+          )
+          .join("\n")
+      : "| - | No contribution data yet | - | - |"
+    const timelineRows = payload.timeline.length
+      ? payload.timeline
+          .map(
+            (point) =>
+              `| ${new Date(point.timestamp).toLocaleString()} | ${point.edits} |`,
+          )
+          .join("\n")
+      : "| - | No timeline data yet |"
+    const modeRows = payload.modeTransitions.length
+      ? payload.modeTransitions
+          .map((transition) => `| ${transition.time} | ${transition.mode} |`)
+          .join("\n")
+      : "| - | No mode transitions yet |"
+
+    const markdown = `# ${payload.sessionName} Session Report
+
+## Overview
+
+| Metric | Value |
+| --- | --- |
+| Total edits | ${payload.totalEdits} |
+| Active participants | ${payload.participants} |
+| Dominance ratio | ${payload.dominanceRatio.toFixed(2)} |
+| Top contributor | ${topContributor ? `${topContributor.user} (${topContributor.dominancePercent}%)` : "No activity yet"} |
+
+## Participation Ranking
+
+| Rank | Participant | Edits | Share |
+| --- | --- | ---: | ---: |
+${contributionRows}
+
+## Dominance Balance
+
+The top contributor accounts for ${topContributor ? `${topContributor.dominancePercent}%` : "0%"} of recorded board activity.
+
+## Activity Timeline
+
+| Time | Edits |
+| --- | ---: |
+${timelineRows}
+
+## Mode Transitions
+
+| Time | Mode |
+| --- | --- |
+${modeRows}
+`
+
+    downloadReport(markdown, "session-report.md", "text/markdown")
   }
 
   if (hasFatalPageError) {
@@ -192,10 +272,15 @@ function SummaryContent({ context }: { context: SessionRouteContext }) {
         actions={
           <>
             {isRefreshing ? <InlineLoader label="Refreshing summary..." /> : null}
-            <Button type="button" onClick={exportReport}>
-              <Download className="h-4 w-4" />
-              Export Report
-            </Button>
+            <div className="flex flex-wrap items-center gap-2">
+              <Button type="button" onClick={exportMarkdownReport}>
+                <Download className="h-4 w-4" />
+                Export MD
+              </Button>
+              <Button type="button" variant="secondary" onClick={exportJsonReport}>
+                Export JSON
+              </Button>
+            </div>
           </>
         }
       />
