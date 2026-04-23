@@ -1,6 +1,5 @@
 node_modules
 .corepack
-thu_mar_12_2026_comprehensive_analysis_of_collaborative_whiteboard_app.md
 .cursor/rules/conversation-flow.mdc
 
 # Environment variables
@@ -52,3 +51,15 @@ apps/frontend/skills-lock.json
 apps/frontend/.agents/skills/shadcn/SKILL.md
 README.md
 README.md
+
+
+
+node_modules/
+.env
+.env.local
+.env.*.local
+dist/
+build/
+.DS_Store
+*.log
+coverage/

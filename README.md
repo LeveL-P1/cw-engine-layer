@@ -16,40 +16,48 @@ This README documents only what is currently checked into the repo.
 
 ## Workspace
 
-The repo uses a single pnpm workspace rooted at the repository root.
+The repo uses npm. Install dependencies in each app:
 
 ```bash
-corepack pnpm install
+npm run install:all
+```
+
+Or manually:
+```bash
+cd apps/backend && npm install
+cd apps/frontend && npm install
 ```
 
 ## Environment Setup
 
-Copy and fill these files:
+Copy and fill these files with your own values:
 
 ```bash
-apps/backend/.env
-apps/frontend/.env.local
+cp apps/backend/.env apps/backend/.env.local  # edit with your values
+cp apps/frontend/.env apps/frontend/.env.local  # edit with your values
 ```
 
-Minimum expected variables are documented in:
-
-- `apps/backend/.env.example`
-- `apps/frontend/.env.example`
-
 ## Development
+
+After pulling the repo, generate Prisma client:
+
+```bash
+cd apps/backend
+npx prisma generate
+```
 
 Backend:
 
 ```bash
 cd apps/backend
-pnpm dev
+npm run dev
 ```
 
 Frontend:
 
 ```bash
 cd apps/frontend
-pnpm dev
+npm run dev
 ```
 
 ## Available Apps
@@ -63,22 +71,22 @@ Frontend lint:
 
 ```bash
 cd apps/frontend
-pnpm lint
+npm run lint
 ```
 
 Backend typecheck:
 
 ```bash
 cd apps/backend
-pnpm typecheck
+npm run typecheck
 ```
 
 Prisma checks:
 
 ```bash
 cd apps/backend
-pnpm prisma:validate
-pnpm prisma:status
+npx prisma validate
+npx prisma migrate status
 ```
 
 ## Notes

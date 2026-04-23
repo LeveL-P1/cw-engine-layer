@@ -3,17 +3,20 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "pnpm -r --parallel --filter backend --filter frontend dev",
-    "dev:backend": "pnpm --filter backend dev",
-    "dev:frontend": "pnpm --filter frontend dev",
-    "lint:frontend": "corepack pnpm --filter frontend lint",
-    "typecheck:frontend": "corepack pnpm --filter frontend typecheck",
-    "typecheck:backend": "corepack pnpm --filter backend typecheck",
-    "build:frontend": "corepack pnpm --filter frontend build",
-    "build:backend": "corepack pnpm --filter backend build",
-    "prisma:validate": "corepack pnpm --filter backend prisma:validate",
-    "prisma:migrate:deploy": "corepack pnpm --filter backend prisma:migrate:deploy",
-    "production:check": "pnpm lint:frontend && pnpm typecheck:frontend && pnpm typecheck:backend && pnpm prisma:validate"
+    "dev:backend": "cd apps/backend && npm run dev",
+    "dev:frontend": "cd apps/frontend && npm run dev",
+    "lint:frontend": "cd apps/frontend && npm run lint",
+    "typecheck:frontend": "cd apps/frontend && npm run typecheck",
+    "typecheck:backend": "cd apps/backend && npm run typecheck",
+    "build:frontend": "cd apps/frontend && npm run build",
+    "build:backend": "cd apps/backend && npm run build",
+    "prisma:validate": "cd apps/backend && npx prisma validate",
+    "prisma:generate": "cd apps/backend && npx prisma generate",
+    "prisma:migrate:deploy": "cd apps/backend && npx prisma migrate deploy",
+    "install:all": "cd apps/backend && npm install && cd ../frontend && npm install"
   },
-  "packageManager": "pnpm@10.28.2"
+  "engines": {
+    "node": ">=20.0.0",
+    "npm": ">=10.0.0"
+  }
 }
