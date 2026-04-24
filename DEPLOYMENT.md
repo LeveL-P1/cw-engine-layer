@@ -13,10 +13,10 @@ Set the backend service root to `apps/backend`.
 Recommended production commands:
 
 ```bash
-pnpm install --frozen-lockfile
-pnpm prisma:migrate:deploy
-pnpm build
-pnpm start
+npm ci
+npm run prisma:migrate:deploy
+npm run build
+npm run start
 ```
 
 Required environment variables:
@@ -40,9 +40,9 @@ Set the frontend service root to `apps/frontend`.
 Recommended production commands:
 
 ```bash
-pnpm install --frozen-lockfile
-pnpm build
-pnpm start
+npm ci
+npm run build
+npm run start
 ```
 
 Required environment variables:
@@ -60,16 +60,15 @@ Configure Auth URL settings before testing production login:
 
 - Site URL: your deployed frontend URL
 - Redirect URLs: your deployed frontend URL plus auth callback/reset paths used by the app
-- Database: run production migrations with `pnpm prisma:migrate:deploy` from `apps/backend`
+- Database: run production migrations with `npm run prisma:migrate:deploy` from `apps/backend`
 
 ## Pre-Deploy Checks
 
 Run these from the repository root:
 
 ```bash
-pnpm production:check
-pnpm build:backend
-pnpm build:frontend
+npm run build:backend
+npm run build:frontend
 ```
 
 ## Smoke Test

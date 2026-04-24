@@ -2,18 +2,22 @@
   "name": "cw-engine",
   "version": "1.0.0",
   "private": true,
+  "workspaces": [
+    "apps/*"
+  ],
   "scripts": {
-    "dev:backend": "cd apps/backend && npm run dev",
-    "dev:frontend": "cd apps/frontend && npm run dev",
-    "lint:frontend": "cd apps/frontend && npm run lint",
-    "typecheck:frontend": "cd apps/frontend && npm run typecheck",
-    "typecheck:backend": "cd apps/backend && npm run typecheck",
-    "build:frontend": "cd apps/frontend && npm run build",
-    "build:backend": "cd apps/backend && npm run build",
-    "prisma:validate": "cd apps/backend && npx prisma validate",
-    "prisma:generate": "cd apps/backend && npx prisma generate",
-    "prisma:migrate:deploy": "cd apps/backend && npx prisma migrate deploy",
-    "install:all": "cd apps/backend && npm install && cd ../frontend && npm install"
+    "dev:backend": "npm run dev -w apps/backend",
+    "dev:frontend": "npm run dev -w apps/frontend",
+    "build:backend": "npm run build -w apps/backend",
+    "build:frontend": "npm run build -w apps/frontend",
+    "start:backend": "npm run start -w apps/backend",
+    "start:frontend": "npm run start -w apps/frontend",
+    "lint:frontend": "npm run lint -w apps/frontend",
+    "typecheck:frontend": "npm run typecheck -w apps/frontend",
+    "typecheck:backend": "npm run typecheck -w apps/backend",
+    "prisma:validate": "npm run prisma:validate -w apps/backend",
+    "prisma:generate": "npm run prisma:generate -w apps/backend",
+    "prisma:migrate:deploy": "npm run prisma:migrate:deploy -w apps/backend"
   },
   "engines": {
     "node": ">=20.0.0",
