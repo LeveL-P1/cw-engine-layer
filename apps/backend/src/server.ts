@@ -19,8 +19,25 @@ import { requireAuth } from "./middleware/auth"
 const app = express()
 const server = http.createServer(app)
 
+function isLocalDevOrigin(origin: string) {
+  if (process.env.NODE_ENV === "production") {
+    return false
+  }
+
+  try {
+    const { hostname } = new URL(origin)
+    return hostname === "localhost" || hostname === "127.0.0.1"
+  } catch {
+    return false
+  }
+}
+
 function isAllowedOrigin(origin: string | undefined) {
-  return !origin || env.corsOrigins.includes(origin)
+  if (!origin) {
+    return true
+  }
+
+  return env.corsOrigins.includes(origin) || isLocalDevOrigin(origin)
 }
 
 const wss = new WebSocketServer({

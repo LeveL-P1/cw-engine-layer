@@ -42,6 +42,7 @@ const publicRuntimeEnv = {
   apiWsUrl: process.env.NEXT_PUBLIC_API_WS_URL,
   supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL,
   supabasePublishableKey: process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY,
+  tldrawLicenseKey: process.env.NEXT_PUBLIC_TLDRAW_LICENSE_KEY,
 }
 
 export const publicEnv = {
@@ -74,5 +75,16 @@ export const publicEnv = {
       "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY",
       publicRuntimeEnv.supabasePublishableKey,
     )
+  },
+  get tldrawLicenseKey() {
+    const value = publicRuntimeEnv.tldrawLicenseKey?.trim()
+
+    if (isProduction && !value) {
+      throw new Error(
+        "NEXT_PUBLIC_TLDRAW_LICENSE_KEY is required in production. Add it to your Vercel environment variables and redeploy.",
+      )
+    }
+
+    return value
   },
 }

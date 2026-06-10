@@ -28,10 +28,21 @@ export async function apiFetch(input: string, init: RequestInit = {}) {
   const headers = new Headers(init.headers)
   headers.set("Authorization", `Bearer ${token}`)
 
-  return fetch(input, {
-    ...init,
-    headers,
-  })
+  try {
+    return await fetch(input, {
+      ...init,
+      headers,
+    })
+  } catch (error) {
+    if (error instanceof TypeError) {
+      throw new ApiError(
+        "Could not reach the backend API. Start the backend locally, or if using Render free tier, open /health first and wait ~60 seconds for the server to wake up.",
+        0,
+      )
+    }
+
+    throw error
+  }
 }
 
 export async function getApiErrorMessage(

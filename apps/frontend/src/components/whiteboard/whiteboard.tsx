@@ -77,6 +77,7 @@ export default function Whiteboard({ sessionId, userId }: Props) {
       )}
 
       <Tldraw
+        licenseKey={publicEnv.tldrawLicenseKey}
         onMount={(editor) => {
           setEditorInstance(editor)
 
